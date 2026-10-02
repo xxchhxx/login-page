@@ -49,7 +49,7 @@ const config = {
     secure: ENV.SMTP_SECURE ? ENV.SMTP_SECURE !== 'false' : smtpFile.secure !== false,
     user: ENV.SMTP_USER || smtpFile.user || '',
     pass: ENV.SMTP_PASS || smtpFile.pass || '',
-    from: ENV.SMTP_FROM || smtpFile.from || ''
+    from: ENV.SMTP_FROM || smtpFile.from || 'xxchhxx'
   }
 };
 
@@ -184,6 +184,16 @@ const smtpReady = () => {
   return Boolean(s.host && s.user && s.pass);
 };
 
+// 组装 From 头。只填显示名（如 "xxchhxx"）时补上真实发件邮箱，
+// 否则裸名字会被邮件服务商当成非法地址而拒收；若写成完整邮箱（含 @）则原样使用。
+function fromHeader() {
+  const name = String(config.smtp.from || '').trim();
+  const user = String(config.smtp.user || '').trim();
+  if (!name) return user;
+  if (name.indexOf('@') !== -1) return name;
+  return '"' + name.replace(/"/g, '') + '" <' + user + '>';
+}
+
 let transporter = null;
 function mailer() {
   if (!transporter) {
@@ -300,7 +310,7 @@ app.post('/api/send-code', async (req, res) => {
   if (!dev) {
     try {
       await mailer().sendMail({
-        from: config.smtp.from || config.smtp.user,
+        from: fromHeader(),
         to: email,
         subject: '【注册验证码】请在 10 分钟内完成验证',
         html: mailHtml(code)
