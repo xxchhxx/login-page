@@ -257,11 +257,14 @@ app.use((req, res, next) => {
 app.use((_req, res, next) => {
   dbReady.then(() => next()).catch((err) => {
     console.error('[数据库不可用]', err.message);
-    res.status(500).json({
+    const body = {
       ok: false,
       message:
         dbConfigError || '数据库连接失败，请检查 TURSO_DATABASE_URL / TURSO_AUTH_TOKEN 配置'
-    });
+    };
+    // 临时：把底层错误一并返回，便于定位连不上 Turso 的原因；定位完删掉
+    if (!dbConfigError) body.detail = err.message;
+    res.status(500).json(body);
   });
 });
 
