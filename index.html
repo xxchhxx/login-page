@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>登录</title>
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f6">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1013">
+<title>CH music · 登录</title>
 <style>
   /* ===== 基础重置 ===== */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -20,6 +22,8 @@
     --on-accent: #ffffff;
     /* 图标底色：承载白色图标的实色块，两种主题下都保持足够对比 */
     --icon-bg: #0078D4;
+    /* 品牌渐变：logo / 头像 / 唱片中心等统一使用，保证全站一致 */
+    --brand-grad: linear-gradient(135deg, #5fcaff, #2a6dff);
 
     /* 次级强调色（青） */
     --accent-2: #057a94;
@@ -163,7 +167,7 @@
   }
 
   /* ===== 认证卡片：分屏叙事布局 =====
-     左侧为品牌区（标题 / 简介 / 数据），右侧承载登录 / 注册 / 关于面板 */
+     左侧深色品牌板（标题 / 简介 / 数据），右侧为分段切换器 + 登录 / 注册 / 关于面板 */
   #auth-shell {
     display: grid;
     grid-template-columns: 1.08fr 1fr;
@@ -173,8 +177,10 @@
     flex-direction: column;
     justify-content: center;
     padding: 44px 42px;
-    background: var(--surface-2);
-    border-right: 1px solid var(--border);
+    /* 深色品牌板：两种主题下观感一致，与右侧表单区形成明暗对比 */
+    background: linear-gradient(168deg, #1e5a9c 0%, #0d3268 55%, #081f43 100%);
+    color: #fff;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
   }
   .auth-brand .auth-logo {
     width: 52px;
@@ -182,7 +188,7 @@
     border-radius: 14px;
     display: grid;
     place-items: center;
-    background: linear-gradient(135deg, #5fcaff, #2a6dff);
+    background: var(--brand-grad);
     box-shadow: 0 10px 24px rgba(42, 109, 255, 0.40);
     margin-bottom: 20px;
   }
@@ -191,8 +197,8 @@
     align-self: flex-start;
     padding: 4px 14px;
     border-radius: 999px;
-    background: var(--accent-soft);
-    color: var(--accent);
+    background: #2a6dff;
+    color: #fff;
     font-size: 12.5px;
     font-weight: 600;
     margin-bottom: 16px;
@@ -202,58 +208,111 @@
     line-height: 1.3;
     letter-spacing: 0.2px;
     margin: 0 0 12px;
+    color: #fff;
   }
-  .auth-title em { font-style: normal; color: var(--accent); }
-  .auth-desc { font-size: 14px; line-height: 1.8; color: var(--text-secondary); }
-  .auth-stats { display: flex; gap: 34px; margin-top: 30px; }
+  .auth-title em { font-style: normal; color: #7cc4ff; }
+  .auth-desc { font-size: 14px; line-height: 1.8; color: rgba(255, 255, 255, 0.78); }
+  .auth-stats {
+    display: flex;
+    gap: 34px;
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+  }
   .auth-stats b { display: block; font-size: 24px; letter-spacing: 0.2px; }
-  .auth-stats span { font-size: 12px; color: var(--text-muted); }
-  /* 窄屏：改为上下堆叠，品牌区压缩（隐藏数据行） */
+  .auth-stats span { font-size: 12px; color: rgba(255, 255, 255, 0.62); }
+
+  /* 右侧：分段切换器（滑块指示）+ 面板容器 */
+  .auth-side {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .seg-wrap { flex: none; padding: 26px 38px 0; }
+  .seg {
+    position: relative;
+    display: flex;
+    padding: 4px;
+    border-radius: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+  }
+  /* 滑块：只动 transform，保证 60fps */
+  .seg-ind {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc((100% - 8px) / 3);
+    border-radius: 9px;
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    transition: transform 0.32s var(--ease-out);
+  }
+  .seg button {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    height: 34px;
+    border: none;
+    background: none;
+    font-family: var(--font);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 9px;
+    transition: color 0.2s ease;
+  }
+  .seg button:hover { color: var(--text-primary); }
+  .seg button.on { color: var(--accent); }
+  .seg button:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-soft); }
+  .auth-panels { position: relative; flex: 1; min-height: 0; }
+
+  /* 分屏后各面板：品牌标题左对齐 + 副文案引导 */
+  #auth-shell .panel { padding: 30px 38px 30px; }
+  #auth-shell .panel .brand { text-align: left; margin-bottom: 18px; }
+
+  /* ===== 面板标题 ===== */
+  .brand {
+    text-align: center;
+    margin-bottom: 34px;
+    position: relative;
+  }
+  .brand h1 { font-size: 24px; font-weight: 600; letter-spacing: 0.2px; }
+  .brand .sub {
+    margin-top: 7px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+  }
+
+  /* 窄屏：改为上下堆叠，品牌板压缩（隐藏数据行与标签）。
+     显式声明两行：品牌板 auto，面板区占满剩余高度，避免行高被拉伸导致内容溢出 */
   @media (max-width: 880px) {
+    body { padding: 14px 0; }
     .stage { width: min(480px, 94vw); }
-    #auth-shell { grid-template-columns: 1fr; }
+    #auth-shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
     .auth-brand {
-      padding: 26px 30px 22px;
+      padding: 24px 26px 20px;
       border-right: none;
-      border-bottom: 1px solid var(--border);
     }
     .auth-brand .auth-logo { display: none; }
     .auth-title { font-size: 20px; margin-bottom: 6px; }
     .auth-desc { font-size: 13px; line-height: 1.65; }
     .auth-stats { display: none; }
     .auth-tag { display: none; }
+    .seg-wrap { padding: 16px 20px 0; }
+    #auth-shell .panel { padding: 20px 22px 24px; }
   }
-  /* 右侧面板容器：面板绝对定位的参照 */
-  .auth-side {
-    position: relative;
-    display: flex;
-    min-width: 0;
-  }
-  /* 分屏后各面板品牌区精简：去掉重复 logo，改为左对齐小标题 */
-  #auth-shell .panel { padding: 44px 38px 38px; }
-  #auth-shell .panel .brand { text-align: left; margin-bottom: 22px; }
-  #auth-shell .panel .brand .logo { display: none; }
 
-  /* ===== 主标题 ===== */
-  .brand {
-    text-align: center;
-    margin-bottom: 34px;
-    position: relative;
+  /* 超窄屏（小屏手机）：进一步收紧内边距与字号 */
+  @media (max-width: 400px) {
+    .seg-wrap { padding: 12px 14px 0; }
+    #auth-shell .panel { padding: 18px 16px 22px; }
+    .seg button { font-size: 13px; }
   }
-  .brand .logo {
-    width: 54px;
-    height: 54px;
-    margin: 0 auto 18px;
-    border-radius: 14px;
-    display: grid;
-    place-items: center;
-    background: linear-gradient(135deg, #5fcaff, #2a6dff);
-    box-shadow:
-      0 10px 24px rgba(42, 109, 255, 0.48),
-      inset 0 1px 0 rgba(255, 255, 255, 0.55);
-  }
-  .brand .logo svg { width: 30px; height: 30px; }
-  .brand h1 { font-size: 27px; font-weight: 600; letter-spacing: 0.2px; }
 
   /* ===== 表单通用 ===== */
   .field { margin-bottom: 20px; position: relative; }
@@ -285,8 +344,8 @@
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-soft);
   }
-  .input-wrap svg { width: 18px; height: 18px; flex: none; color: var(--text-secondary); transition: color 0.2s ease; }
-  .input-wrap:focus-within svg { color: var(--accent); }
+  .input-wrap .i { width: 18px; height: 18px; flex: none; color: var(--text-secondary); transition: color 0.2s ease; }
+  .input-wrap:focus-within .i { color: var(--accent); }
   .input-wrap input {
     flex: 1;
     border: none;
@@ -311,9 +370,14 @@
     place-items: center;
     padding: 4px;
     border-radius: 5px;
+    transition: color 0.16s ease;
   }
   .showpwd:hover { color: var(--text-primary); }
-  .showpwd svg { width: 18px; height: 18px; }
+  .showpwd .i { width: 18px; height: 18px; grid-area: 1 / 1; }
+  /* 眼睛图标切换：默认显示「睁开」，激活后切到「闭上」 */
+  .showpwd .i-off { display: none; }
+  .showpwd.on .i-on { display: none; }
+  .showpwd.on .i-off { display: block; }
 
   /* ===== 记住我 / 忘记密码 ===== */
   .row {
@@ -325,6 +389,19 @@
   }
   .row a { color: var(--link); text-decoration: none; transition: color 0.16s ease; }
   .row a:hover { color: var(--accent-hover); text-decoration: underline; }
+  /* 忘记密码按钮：与链接同观感，但可绑定真实的引导行为 */
+  .row .link {
+    background: none;
+    border: none;
+    padding: 2px 3px;
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--link);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: color 0.16s ease;
+  }
+  .row .link:hover { color: var(--accent-hover); text-decoration: underline; }
   .check { display: flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; color: var(--text-secondary); transition: color 0.16s ease; }
   .check:hover { color: var(--text-primary); }
   .check input { position: absolute; opacity: 0; pointer-events: none; }
@@ -376,9 +453,24 @@
   .btn:hover {
     background: var(--accent-hover);
     box-shadow: var(--shadow-2);
+    transform: translateY(-1px);
   }
   .btn:active { background: var(--accent-press); transform: scale(0.97); }
   .btn:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft); outline: none; }
+  /* 提交等待中的旋转指示器：用 currentColor，主/次按钮都能复用 */
+  .btn.loading::before {
+    content: "";
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    vertical-align: -2px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: btn-spin 0.7s linear infinite;
+  }
+  @keyframes btn-spin { to { transform: rotate(360deg); } }
 
   /* ===== 分隔与切换 ===== */
   .switch-hint {
@@ -405,14 +497,6 @@
   .switch-hint .dot { margin: 0 2px; color: var(--text-muted); }
 
   /* ===== 关于我们 / 公告 ===== */
-  #panel-about .brand { margin-bottom: 22px; }
-  .brand .sub {
-    margin-top: 7px;
-    font-size: 13px;
-    color: var(--text-secondary);
-    letter-spacing: 0.3px;
-  }
-
   .notice-list {
     display: flex;
     flex-direction: column;
@@ -502,6 +586,22 @@
   .msg svg { width: 15px; height: 15px; flex: none; margin-top: 1.5px; }
   .msg.err { color: var(--danger); background: var(--danger-soft); border-color: var(--danger-border); }
   .msg.ok  { color: var(--success); background: var(--success-soft); border-color: var(--success-border); }
+  .msg.info { color: var(--link); background: var(--accent-soft); border-color: var(--accent); }
+
+  /* ===== 密码强度条（注册面板） ===== */
+  .pwd-meter { display: flex; align-items: center; gap: 6px; margin-top: 9px; }
+  .pwd-meter i {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface-3);
+    transition: background 0.25s ease;
+  }
+  .pwd-meter span { flex: none; margin-left: 4px; font-size: 12px; color: var(--text-muted); }
+  .pwd-meter.l1 i:nth-child(1) { background: var(--danger); }
+  .pwd-meter.l2 i:nth-child(-n+2) { background: var(--warn); }
+  .pwd-meter.l3 i { background: var(--success); }
+  .pwd-meter.l1 span, .pwd-meter.l2 span, .pwd-meter.l3 span { color: var(--text-secondary); }
 
   /* 提交按钮的加载态 */
   .btn:disabled { cursor: default; transform: none; opacity: 0.6; }
@@ -523,125 +623,167 @@
     inset: 0;
     height: auto;
     display: none;
-    flex-direction: column;
+    flex-direction: row;
     opacity: 0;
     transition: opacity 0.3s linear;
   }
   .app-shell.open { display: flex; }
   .app-shell.on { opacity: 1; }
 
-  /* --- 顶栏：品牌 + 当前用户 --- */
-  .app-bar {
+  /* --- 侧边栏：品牌 + 导航 + 用户 --- */
+  .app-side {
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    width: 228px;
+    padding: 22px 16px 18px;
+    border-right: 1px solid var(--divider);
+    background: var(--surface-2);
+  }
+  .side-brand {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    flex: none;
-    padding: 20px 34px;
-    border-bottom: 1px solid var(--divider);
+    gap: 12px;
+    padding: 0 6px;
+    margin-bottom: 26px;
   }
-  .app-brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
-  .app-brand .mark {
-    width: 42px;
-    height: 42px;
+  .side-brand .mark {
+    width: 40px;
+    height: 40px;
     flex: none;
     border-radius: 12px;
     display: grid;
     place-items: center;
-    background: linear-gradient(135deg, #5fcaff, #2a6dff);
+    background: var(--brand-grad);
     box-shadow:
       0 8px 20px rgba(42, 109, 255, 0.42),
       inset 0 1px 0 rgba(255, 255, 255, 0.5);
   }
-  .app-brand .mark svg { width: 23px; height: 23px; }
-  .app-brand b { display: block; font-size: 17.5px; font-weight: 600; letter-spacing: 0.3px; }
-  .app-brand .sub { display: block; margin-top: 3px; font-size: 12px; color: var(--text-secondary); }
+  .side-brand .mark svg { width: 22px; height: 22px; }
+  .side-brand b { display: block; font-size: 15.5px; font-weight: 600; letter-spacing: 0.3px; }
+  .side-brand .tt span { display: block; margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
 
-  .app-user {
+  /* 导航项：图标 + 文字的纵向列表，选中项用主题色软底胶囊 */
+  .app-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .app-tab {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex: none;
-    max-width: 46%;
-    padding: 6px 18px 6px 6px;
-    border-radius: 999px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-  }
-  .app-user .mini {
-    width: 31px;
-    height: 31px;
-    flex: none;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    font-size: 13.5px;
-    font-weight: 600;
-    color: #fff;
-    background: linear-gradient(135deg, #5fcaff, #2a6dff);
-  }
-  .app-user .name {
-    font-size: 14px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* --- 导航：四个功能分页 --- */
-  .app-nav {
-    display: flex;
-    gap: 4px;
-    flex: none;
-    padding: 12px 28px 0;
-    border-bottom: 1px solid var(--divider);
-  }
-  .app-tab {
-    position: relative;
-    flex: none;
-    padding: 11px 20px 14px;
+    padding: 10px 12px;
     border: none;
-    border-radius: 8px 8px 0 0;
+    border-radius: 10px;
     background: none;
     font-family: var(--font);
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 500;
     color: var(--text-secondary);
     cursor: pointer;
     white-space: nowrap;
     transition: color 0.18s ease, background 0.18s ease;
   }
-  .app-tab:hover { color: var(--text-primary); background: var(--surface-2); }
-  .app-tab.on { color: var(--text-primary); }
-  /* 活跃项底部指示条 */
-  .app-tab::after {
-    content: "";
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: -1px;
-    height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, #5fcaff, #2a6dff);
-    opacity: 0;
-    transition: opacity 0.22s ease;
+  .app-tab svg { width: 18px; height: 18px; flex: none; opacity: 0.85; }
+  .app-tab:hover { color: var(--text-primary); background: var(--surface-3); }
+  .app-tab.on { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .app-tab.on svg { opacity: 1; }
+  .app-tab:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1.5px var(--accent);
   }
-  .app-tab.on::after { opacity: 1; }
+
+  /* 用户区固定在侧边栏底部，与导航用分隔线断开层级 */
+  .side-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: auto;
+    padding: 14px 6px 0;
+    border-top: 1px solid var(--divider);
+  }
+  .side-user .mini {
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--brand-grad);
+  }
+  .side-user .uu { min-width: 0; }
+  .side-user b {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .side-user .uu span {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* 侧边栏入场：品牌 → 导航 → 用户 依次上浮 */
+  .app-shell.on .app-side > * { animation: page-in 0.4s var(--ease-out) both; }
+  .app-shell.on .app-side > *:nth-child(2) { animation-delay: 0.06s; }
+  .app-shell.on .app-side > *:nth-child(3) { animation-delay: 0.12s; }
+
+  /* --- 主区：动态页眉 + 内容 --- */
+  .app-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex: none;
+    padding: 18px 32px 16px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .app-topbar h2 { font-size: 17px; font-weight: 600; letter-spacing: 0.2px; }
+  .app-topbar .hd p { margin-top: 3px; font-size: 12.5px; color: var(--text-secondary); }
+  .app-topbar .ver {
+    flex: none;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+  }
 
   /* --- 内容区：仅此处滚动，卡片高度保持稳定 --- */
   .app-body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 32px 34px 36px;
+    padding: 28px 32px 40px;
     scrollbar-width: thin;
     scrollbar-color: var(--border-strong) transparent;
   }
+  /* 内容列：宽屏时限宽居中，避免文本行过长；窄屏自然撑满 */
+  .app-page { max-width: 1000px; margin: 0 auto; }
   .app-body::-webkit-scrollbar { width: 6px; }
   .app-body::-webkit-scrollbar-track { background: transparent; }
   .app-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
   .app-body::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-  .app-bar, .app-nav, .app-body { position: relative; z-index: 1; }
+  .app-side, .app-main { position: relative; z-index: 1; }
 
   /* 分页切换：淡入 + 轻微上移 */
   .app-page { display: none; }
@@ -653,7 +795,7 @@
 
   /* 占位提示：内容待补充的地方统一用它，替换内容时一并删掉 */
   .todo {
-    margin-bottom: 22px;
+    margin-bottom: 20px;
     padding: 13px 18px;
     border-radius: var(--radius-sm);
     font-size: 13px;
@@ -664,7 +806,7 @@
   }
   .todo b { font-weight: 600; }
 
-  .page-hd { margin-bottom: 22px; }
+  .page-hd { margin-bottom: 24px; }
   .page-hd h3 { font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
   .page-hd p { margin-top: 8px; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
 
@@ -674,7 +816,7 @@
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
     align-items: center;
     gap: 34px;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
     padding: 32px 36px;
     border-radius: var(--radius-lg);
     background: var(--surface-2);
@@ -726,7 +868,7 @@
     width: 58px;
     height: 58px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #5fcaff, #2a6dff);
+    background: var(--brand-grad);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
   }
   @keyframes disc-spin { to { transform: rotate(360deg); } }
@@ -793,7 +935,7 @@
   .feat p { font-size: 13.5px; line-height: 1.75; color: var(--text-secondary); }
 
   /* --- 界面预览：截图占位区（换成真图时删除 .shot 的虚线样式与标签） --- */
-  .section-t { margin: 30px 0 16px; }
+  .section-t { margin: 28px 0 16px; }
   .section-t h3 { font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
   .section-t p { margin-top: 8px; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
 
@@ -856,14 +998,13 @@
   }
   .dl-card .top b { font-size: 16px; font-weight: 600; }
   .dl-card .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    margin-bottom: 18px;
+    display: grid;
+    gap: 7px;
+    margin-bottom: 20px;
     font-size: 12.5px;
     color: var(--text-secondary);
   }
-  .dl-card .btn { margin-top: auto; height: 44px; font-size: 14.5px; }
+  .dl-card .btn { margin-top: auto; height: 46px; font-size: 14.5px; }
   .dl-card .btn:disabled {
     background: var(--surface-sunken);
     color: var(--text-muted);
@@ -872,7 +1013,7 @@
 
   /* --- 关于我们 / 个人中心 --- */
   .about-block {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     padding: 22px 24px;
     border-radius: var(--radius-md);
     background: var(--surface-2);
@@ -901,7 +1042,7 @@
   }
   .kv .mini-btn:hover { background: var(--surface-3); border-color: var(--accent-hover); }
 
-  .me-head { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+  .me-head { display: flex; align-items: center; gap: 18px; margin-bottom: 28px; }
   .me-head h4 { font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
   .me-head .mail { margin-top: 7px; font-size: 13.5px; color: var(--text-secondary); word-break: break-all; }
 
@@ -916,7 +1057,7 @@
     font-size: 26px;
     font-weight: 600;
     color: #fff;
-    background: linear-gradient(135deg, #5fcaff, #2a6dff);
+    background: var(--brand-grad);
     box-shadow:
       0 10px 24px rgba(42, 109, 255, 0.48),
       inset 0 1px 0 rgba(255, 255, 255, 0.55);
@@ -925,11 +1066,11 @@
   .home-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-    margin-bottom: 28px;
+    gap: 16px;
+    margin-bottom: 24px;
   }
   .home-card {
-    padding: 18px 20px;
+    padding: 20px 22px;
     border-radius: var(--radius-md);
     background: var(--surface-2);
     border: 1px solid var(--border);
@@ -943,6 +1084,21 @@
   }
   .home-card .v { font-size: 15.5px; font-weight: 600; }
   .home-card .v.ok { color: var(--success); }
+
+  /* 个人中心底部操作区：分隔线 + 靠右放置退出登录，层级与内容区分明 */
+  .me-foot {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 22px;
+    border-top: 1px solid var(--divider);
+  }
+  .me-foot .btn.ghost.wide { min-width: 148px; height: 46px; }
+  /* 危险倾向提示：悬停时才浮现红色描边，平时保持中性 */
+  .me-foot .btn.ghost:hover {
+    color: var(--danger);
+    border-color: var(--danger-border);
+    background: var(--danger-soft);
+  }
   .btn.ghost.wide { width: auto; min-width: 160px; padding: 0 26px; }
 
   /* 次要按钮：退出登录等，用中性实色，避免与主操作抢视觉 */
@@ -959,30 +1115,56 @@
   }
   .btn.ghost:active { background: var(--surface-sunken); }
 
-  /* 中等宽度：四列网格降为两列（窄于此宽度时四列会过于局促） */
+  /* 中等宽度：四列网格降为两列（窄于此宽度时四列会过于局促）
+     截图区保持三列 —— 三张截图降为两列会产生孤行空位 */
   @media (max-width: 1120px) {
-    .feat-grid, .dl-grid, .shots, .home-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .feat-grid, .dl-grid, .home-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* ≤900：侧边栏折叠为顶部横条（品牌 + 横向导航），页眉让位给页面自身标题 */
+  @media (max-width: 900px) {
+    .app-shell { flex-direction: column; }
+    .app-side {
+      width: auto;
+      flex-direction: row;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border-right: none;
+      border-bottom: 1px solid var(--divider);
+    }
+    .side-brand { margin-bottom: 0; padding: 0; }
+    .side-brand .tt span { display: none; }
+    .app-nav {
+      flex-direction: row;
+      flex: 1;
+      justify-content: flex-end;
+      gap: 2px;
+      margin-left: auto;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .app-nav::-webkit-scrollbar { display: none; }
+    .app-tab { padding: 8px 12px; font-size: 13.5px; border-radius: 8px; }
+    .side-user { display: none; }
+    .app-topbar { display: none; }
+    .app-body { padding: 24px 20px 30px; }
   }
 
   /* 中窄屏：hero 由左右分栏改为上下堆叠，避免右侧装饰被挤扁 */
   @media (max-width: 760px) {
     .hero { grid-template-columns: 1fr; gap: 26px; padding: 26px 24px; }
-    .app-body { padding: 26px 24px 30px; }
   }
 
   /* 窄屏：导航横向滚动、用户胶囊只留头像 */
   @media (max-width: 620px) {
-    .app-bar { padding: 15px 16px; }
-    .app-brand .mark { width: 36px; height: 36px; border-radius: 10px; }
-    .app-brand .mark svg { width: 20px; height: 20px; }
-    .app-brand b { font-size: 15.5px; }
-    .app-nav { padding: 10px 12px 0; overflow-x: auto; scrollbar-width: none; }
-    .app-nav::-webkit-scrollbar { display: none; }
-    .app-tab { padding: 9px 13px 12px; font-size: 13.5px; }
-    .app-tab::after { left: 11px; right: 11px; }
-    .app-body { padding: 20px 16px 24px; }
-    .app-user { padding: 5px; }
-    .app-user .name { display: none; }
+    .app-side { gap: 10px; padding: 10px 12px; }
+    .side-brand .mark { width: 34px; height: 34px; border-radius: 10px; }
+    .side-brand .mark svg { width: 19px; height: 19px; }
+    .side-brand b { font-size: 14.5px; }
+    .app-nav { gap: 1px; }
+    .app-tab { padding: 8px 10px; font-size: 13px; }
+    .app-body { padding: 18px 14px 24px; }
     .page-hd h3, .section-t h3 { font-size: 19px; }
     .page-hd p, .section-t p { font-size: 13px; }
     .hero { padding: 22px 18px; }
@@ -1034,6 +1216,8 @@
   .panel.on > *:nth-child(4), .app-page.on > *:nth-child(4) { animation-delay: 0.26s; }
   .panel.on > *:nth-child(5), .app-page.on > *:nth-child(5) { animation-delay: 0.33s; }
   .panel.on > *:nth-child(6), .app-page.on > *:nth-child(6) { animation-delay: 0.40s; }
+  .panel.on > *:nth-child(7), .app-page.on > *:nth-child(7) { animation-delay: 0.45s; }
+  .panel.on > *:nth-child(8), .app-page.on > *:nth-child(8) { animation-delay: 0.49s; }
   /* ② 公告弹窗列表条目级联 */
   .modal-mask.open .modal-list li { animation: rise-in var(--dur-base) var(--ease-out) both; }
   .modal-mask.open .modal-list li:nth-child(1) { animation-delay: 0.10s; }
@@ -1153,17 +1337,25 @@
 </style>
 </head>
 <body>
+  <!-- ===== 统一图标库（SVG sprite）：24 网格 / 1.8 描边 / 圆角线帽，全站图标风格一致 ===== -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3 7 9 6 9-6"/></g></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10V8a6 6 0 0 1 12 0v2"/><rect x="4.5" y="10" width="15" height="10" rx="2.5"/></g></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5"/></g></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.3 3 7.8 7.5 9.5 4.5-1.7 7.5-5.2 7.5-9.5V6L12 3Z"/><path d="m9.2 12 2 2 3.6-3.8"/></g></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 18 18"/><path d="M10.7 5.2A10.8 10.8 0 0 1 12 5.1c6.5 0 10 6.9 10 6.9a17.6 17.6 0 0 1-3 3.9M6.5 6.6C3.9 8.3 2 12 2 12s3.5 6.9 10 6.9c1.4 0 2.7-.3 3.9-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></g></symbol>
+      <symbol id="i-logo" viewBox="0 0 24 24"><g fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5" fill="#fff" stroke="none"/><rect x="13" y="4" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/><rect x="4" y="13" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></g></symbol>
+    </defs>
+  </svg>
+
   <div class="stage" id="stage">
     <div class="card-shell" id="auth-shell">
-      <!-- 左侧品牌区：分屏叙事（方案 B） -->
+      <!-- 左侧深色品牌板：分屏叙事（方案 B 升级版） -->
       <div class="auth-brand" aria-hidden="true">
         <div class="auth-logo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="4" width="7" height="7" rx="1.5" fill="#fff" stroke="none"/>
-            <rect x="13" y="4" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/>
-            <rect x="4" y="13" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/>
-            <rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke="#fff" stroke-width="1.6"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><use href="#i-logo"/></svg>
         </div>
         <span class="auth-tag">v1.3.0 全新改版</span>
         <h1 class="auth-title">更清晰、更专注的<br><em>音乐播放器</em>体验</h1>
@@ -1175,161 +1367,133 @@
         </div>
       </div>
 
-      <!-- 右侧：登录 / 注册 / 关于 面板容器 -->
+      <!-- 右侧：分段切换器 + 登录 / 注册 / 关于 面板容器 -->
       <div class="auth-side">
-      <!-- ===== 登录面板 ===== -->
-      <form class="panel on" id="panel-login" autocomplete="off">
-        <div class="brand">
-          <div class="logo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="4" width="7" height="7" rx="1.5" fill="#fff" stroke="none"/>
-              <rect x="13" y="4" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/>
-              <rect x="4" y="13" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/>
-              <rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke="#fff" stroke-width="1.6"/>
-            </svg>
-          </div>
-          <h1>登录</h1>
-        </div>
-
-        <div class="field">
-          <label for="login-mail">邮箱</label>
-          <div class="input-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="5" width="18" height="14" rx="2.5"/>
-              <path d="m3 7 9 6 9-6"/>
-            </svg>
-            <input id="login-mail" type="email" placeholder="请输入邮箱" autocomplete="username">
+        <div class="seg-wrap">
+          <div class="seg" id="auth-seg" role="tablist" aria-label="面板切换">
+            <span class="seg-ind" aria-hidden="true"></span>
+            <button type="button" role="tab" data-goto="login" aria-selected="true">登录</button>
+            <button type="button" role="tab" data-goto="register" aria-selected="false">注册</button>
+            <button type="button" role="tab" data-goto="about" aria-selected="false">关于</button>
           </div>
         </div>
 
-        <div class="field">
-          <label for="login-pwd">密码</label>
-          <div class="input-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M6 10V8a6 6 0 0 1 12 0v2"/>
-              <rect x="4.5" y="10" width="15" height="10" rx="2.5"/>
-            </svg>
-            <input id="login-pwd" type="password" placeholder="请输入密码">
-            <button class="showpwd" type="button" data-target="login-pwd" aria-label="显示密码">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
+        <div class="auth-panels">
+        <!-- ===== 登录面板 ===== -->
+        <form class="panel on" id="panel-login" autocomplete="off">
+          <div class="brand">
+            <h1>欢迎回来</h1>
+            <div class="sub">登录以同步你的收藏与播放列表</div>
           </div>
-        </div>
 
-        <div class="row">
-          <label class="check">
-            <input type="checkbox" id="remember">
-            <span class="box"></span>
-            记住我
-          </label>
-          <a href="#">忘记密码?</a>
-        </div>
-
-        <div class="msg" id="login-msg" role="status" aria-live="polite"></div>
-
-        <button class="btn" type="button" id="btn-login">登录</button>
-
-        <div class="switch-hint">
-          还没有账户?
-          <button type="button" data-goto="register">注册</button>
-          <span class="dot">·</span>
-          <button type="button" data-goto="about">关于我们</button>
-        </div>
-      </form>
-
-      <!-- ===== 注册面板 ===== -->
-      <form class="panel" id="panel-register" autocomplete="off">
-        <div class="brand">
-          <div class="logo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="4" width="7" height="7" rx="1.5" fill="#fff" stroke="none"/>
-              <rect x="13" y="4" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/>
-              <rect x="4" y="13" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/>
-              <rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke="#fff" stroke-width="1.6"/>
-            </svg>
+          <div class="field">
+            <label for="login-mail">邮箱</label>
+            <div class="input-wrap">
+              <svg class="i" aria-hidden="true"><use href="#i-mail"/></svg>
+              <input id="login-mail" type="email" placeholder="请输入邮箱" autocomplete="username">
+            </div>
           </div>
-          <h1>创建账户</h1>
-        </div>
 
-        <div class="field">
-          <label for="reg-user">用户名</label>
-          <div class="input-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="8" r="4"/>
-              <path d="M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5"/>
-            </svg>
-            <input id="reg-user" type="text" placeholder="请输入用户名">
+          <div class="field">
+            <label for="login-pwd">密码</label>
+            <div class="input-wrap">
+              <svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>
+              <input id="login-pwd" type="password" placeholder="请输入密码">
+              <button class="showpwd" type="button" data-target="login-pwd" aria-label="显示密码">
+                <svg class="i i-on" aria-hidden="true"><use href="#i-eye"/></svg>
+                <svg class="i i-off" aria-hidden="true"><use href="#i-eye-off"/></svg>
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div class="field">
-          <label for="reg-mail">邮箱</label>
-          <div class="input-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="5" width="18" height="14" rx="2.5"/>
-              <path d="m3 7 9 6 9-6"/>
-            </svg>
-            <input id="reg-mail" type="email" placeholder="请输入邮箱" autocomplete="email">
+          <div class="row">
+            <label class="check">
+              <input type="checkbox" id="remember">
+              <span class="box"></span>
+              记住我
+            </label>
+            <button type="button" class="link" id="btn-forgot">忘记密码?</button>
           </div>
-        </div>
 
-        <div class="field">
-          <label for="reg-code">邮箱验证码</label>
-          <div class="input-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3 4.5 6v5.5c0 4.3 3 7.8 7.5 9.5 4.5-1.7 7.5-5.2 7.5-9.5V6L12 3Z"/>
-              <path d="m9.2 12 2 2 3.6-3.8"/>
-            </svg>
-            <input id="reg-code" type="text" inputmode="numeric" maxlength="6" placeholder="6 位数字验证码" autocomplete="one-time-code">
-            <button class="code-btn" type="button" id="btn-send-code">获取验证码</button>
+          <div class="msg" id="login-msg" role="status" aria-live="polite"></div>
+
+          <button class="btn" type="button" id="btn-login">登录</button>
+
+          <div class="switch-hint">
+            还没有账户?
+            <button type="button" data-goto="register">注册</button>
+            <span class="dot">·</span>
+            <button type="button" data-goto="about">关于我们</button>
           </div>
-        </div>
+        </form>
 
-        <div class="field">
-          <label for="reg-pwd">密码</label>
-          <div class="input-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M6 10V8a6 6 0 0 1 12 0v2"/>
-              <rect x="4.5" y="10" width="15" height="10" rx="2.5"/>
-            </svg>
-            <input id="reg-pwd" type="password" placeholder="请设置密码（至少 8 位）" autocomplete="new-password">
-            <button class="showpwd" type="button" data-target="reg-pwd" aria-label="显示密码">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
+        <!-- ===== 注册面板 ===== -->
+        <form class="panel" id="panel-register" autocomplete="off">
+          <div class="brand">
+            <h1>创建账户</h1>
+            <div class="sub">几分钟完成注册，收藏与歌单云端同步</div>
           </div>
-        </div>
 
-        <div class="msg" id="reg-msg" role="status" aria-live="polite"></div>
-
-        <button class="btn" type="button" id="btn-register">注册</button>
-
-        <div class="switch-hint">
-          已有账户?
-          <button type="button" data-goto="login">登录</button>
-          <span class="dot">·</span>
-          <button type="button" data-goto="about">关于我们</button>
-        </div>
-      </form>
-
-      <!-- ===== 关于我们 / 公告面板 ===== -->
-      <div class="panel" id="panel-about">
-        <div class="brand">
-          <div class="logo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <path d="M12 11v6"/>
-              <circle cx="12" cy="7.6" r="1.1" fill="#fff" stroke="none"/>
-            </svg>
+          <div class="field">
+            <label for="reg-user">用户名</label>
+            <div class="input-wrap">
+              <svg class="i" aria-hidden="true"><use href="#i-user"/></svg>
+              <input id="reg-user" type="text" placeholder="2–20 个字符" autocomplete="nickname">
+            </div>
           </div>
-          <h1>关于我们</h1>
-          <div class="sub">平台公告与更新</div>
-        </div>
+
+          <div class="field">
+            <label for="reg-mail">邮箱</label>
+            <div class="input-wrap">
+              <svg class="i" aria-hidden="true"><use href="#i-mail"/></svg>
+              <input id="reg-mail" type="email" placeholder="请输入邮箱" autocomplete="email">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="reg-code">邮箱验证码</label>
+            <div class="input-wrap">
+              <svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>
+              <input id="reg-code" type="text" inputmode="numeric" maxlength="6" placeholder="6 位数字验证码" autocomplete="one-time-code">
+              <button class="code-btn" type="button" id="btn-send-code">获取验证码</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="reg-pwd">密码</label>
+            <div class="input-wrap">
+              <svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>
+              <input id="reg-pwd" type="password" placeholder="请设置密码（至少 8 位）" autocomplete="new-password">
+              <button class="showpwd" type="button" data-target="reg-pwd" aria-label="显示密码">
+                <svg class="i i-on" aria-hidden="true"><use href="#i-eye"/></svg>
+                <svg class="i i-off" aria-hidden="true"><use href="#i-eye-off"/></svg>
+              </button>
+            </div>
+            <!-- 实时密码强度提示，注册前就知道密码是否合规 -->
+            <div class="pwd-meter" id="pwd-meter" aria-live="polite">
+              <i></i><i></i><i></i>
+              <span id="pwd-hint">至少 8 位，建议混合字母与数字</span>
+            </div>
+          </div>
+
+          <div class="msg" id="reg-msg" role="status" aria-live="polite"></div>
+
+          <button class="btn" type="button" id="btn-register">注册</button>
+
+          <div class="switch-hint">
+            已有账户?
+            <button type="button" data-goto="login">登录</button>
+            <span class="dot">·</span>
+            <button type="button" data-goto="about">关于我们</button>
+          </div>
+        </form>
+
+        <!-- ===== 关于我们 / 公告面板 ===== -->
+        <div class="panel" id="panel-about">
+          <div class="brand">
+            <h1>关于我们</h1>
+            <div class="sub">平台公告与更新</div>
+          </div>
 
         <div class="notice-list">
           <article class="notice">
@@ -1368,16 +1532,17 @@
           <span class="dot">·</span>
           <button type="button" data-goto="register">注册账户</button>
         </div>
-      </div>
+        </div><!-- /panel-about -->
+        </div><!-- /auth-panels -->
       </div><!-- /auth-side -->
 
     </div>
 
     <!-- ===== 登录后的应用界面 ===== -->
     <div class="card-shell app-shell" id="app-shell">
-      <!-- 顶栏：品牌 + 当前用户 -->
-      <div class="app-bar">
-        <div class="app-brand">
+      <!-- 侧边栏：品牌 + 功能导航 + 当前用户 -->
+      <aside class="app-side">
+        <div class="side-brand">
           <div class="mark">
             <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 18V6.6l9-1.8v10.9"/>
@@ -1385,27 +1550,51 @@
               <circle cx="15.6" cy="15.7" r="2.4" fill="#d8e8ff" stroke="none"/>
             </svg>
           </div>
-          <div>
+          <div class="tt">
             <b>CH music</b>
-            <span class="sub">本地音乐播放器</span>
+            <span>本地音乐播放器</span>
           </div>
         </div>
 
-        <div class="app-user">
+        <nav class="app-nav" aria-label="功能导航">
+          <button class="app-tab on" type="button" data-tab="intro">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 11.2v5.2"/><circle cx="12" cy="7.9" r="1" fill="currentColor" stroke="none"/></svg>
+            <span>产品介绍</span>
+          </button>
+          <button class="app-tab" type="button" data-tab="download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v9.5"/><path d="m7.8 10.6 4.2 4.2 4.2-4.2"/><path d="M5.2 19h13.6"/></svg>
+            <span>下载链接</span>
+          </button>
+          <button class="app-tab" type="button" data-tab="about">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.2" cy="8.6" r="3.1"/><path d="M3.8 18.6c.9-2.9 2.9-4.4 5.4-4.4s4.5 1.5 5.4 4.4"/><circle cx="16.6" cy="9.6" r="2.5"/><path d="M16.4 14.7c2.1.2 3.6 1.6 4.3 3.9"/></svg>
+            <span>关于我们</span>
+          </button>
+          <button class="app-tab" type="button" data-tab="me">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.4" r="3.3"/><path d="M5.4 19.2c1-3.4 3.5-5.2 6.6-5.2s5.6 1.8 6.6 5.2"/></svg>
+            <span>个人中心</span>
+          </button>
+        </nav>
+
+        <div class="side-user">
           <span class="mini" id="app-avatar">·</span>
-          <span class="name" id="app-username"></span>
+          <div class="uu">
+            <b id="app-username"></b>
+            <span id="side-mail">已登录</span>
+          </div>
         </div>
-      </div>
+      </aside>
 
-      <!-- 导航：四个功能分页 -->
-      <div class="app-nav">
-        <button class="app-tab on" type="button" data-tab="intro">产品介绍</button>
-        <button class="app-tab" type="button" data-tab="download">下载链接</button>
-        <button class="app-tab" type="button" data-tab="about">关于我们</button>
-        <button class="app-tab" type="button" data-tab="me">个人中心</button>
-      </div>
+      <!-- 主区：动态页眉 + 可滚动内容 -->
+      <div class="app-main">
+        <header class="app-topbar">
+          <div class="hd">
+            <h2 id="app-title">产品介绍</h2>
+            <p id="app-sub">了解 CH music 的核心能力</p>
+          </div>
+          <span class="ver">v1.3.0</span>
+        </header>
 
-      <div class="app-body" id="app-body">
+        <div class="app-body" id="app-body">
 
         <!-- ===== 产品介绍 ===== -->
         <section class="app-page on" id="page-intro">
@@ -1663,7 +1852,9 @@
             <p>该账号仅用于同步收藏、播放列表与播放进度；本地音乐文件始终保存在你自己的设备上，不会上传到服务器。</p>
           </div>
 
-          <button class="btn ghost wide" type="button" id="btn-logout">退出登录</button>
+          <div class="me-foot">
+            <button class="btn ghost wide" type="button" id="btn-logout">退出登录</button>
+          </div>
         </section>
 
       </div>
@@ -1718,28 +1909,61 @@
   const panels = Array.from(document.querySelectorAll('.panel'));
   let activeName = 'login';
 
-  // 让卡片高度始终等于“较高的面板 / 品牌区”，切换时高度不变，避免布局跳动
+  // 让卡片高度始终等于“较高的面板 / 品牌板 + 分段切换器”，切换时高度不变，避免布局跳动。
+  // 测量放在 rAF 中批量进行：先统一改为静态布局，再一次性读取，避免逐个读写造成多次回流。
+  let shellQueued = false;
   function sizeShell() {
-    shell.style.height = 'auto';
-    let maxH = 0;
-    panels.forEach((p) => {
-      // 临时转为静态参与布局以量取自然高度
-      const prev = { pos: p.style.position, op: p.style.opacity };
-      p.style.position = 'static';
-      p.style.opacity = '1';
-      void p.offsetWidth;
-      maxH = Math.max(maxH, p.getBoundingClientRect().height);
-      p.style.position = prev.pos;
-      p.style.opacity = prev.op;
+    if (shellQueued) return;
+    shellQueued = true;
+    requestAnimationFrame(() => {
+      shellQueued = false;
+      shell.style.height = 'auto';
+      const saved = panels.map((p) => ({ p, pos: p.style.position, op: p.style.opacity }));
+      saved.forEach((s) => { s.p.style.position = 'static'; s.p.style.opacity = '1'; });
+      // 品牌板是 grid 拉伸项，需临时改为顶部对齐才能量出自然高度
+      const brand = document.querySelector('.auth-brand');
+      const prevAlign = brand ? brand.style.alignSelf : '';
+      if (brand) brand.style.alignSelf = 'start';
+      void shell.offsetHeight; // 只触发一次回流
+      let panelH = 0;
+      panels.forEach((p) => { panelH = Math.max(panelH, p.getBoundingClientRect().height); });
+      let brandH = 0;
+      const brandVisible = brand && getComputedStyle(brand).display !== 'none';
+      if (brandVisible) brandH = brand.getBoundingClientRect().height;
+      saved.forEach((s) => { s.p.style.position = s.pos; s.p.style.opacity = s.op; });
+      if (brand) brand.style.alignSelf = prevAlign;
+      // 分段切换器位于面板上方，需计入卡片总高
+      let segH = 0;
+      const segWrap = document.querySelector('.seg-wrap');
+      if (segWrap && getComputedStyle(segWrap).display !== 'none') {
+        segH = segWrap.getBoundingClientRect().height;
+      }
+      // 桌面端：左右分屏，卡片 = 切换器 + max(面板, 品牌板)；
+      // 堆叠端（≤880）：三段纵向排列，卡片 = 品牌板 + 切换器 + 面板
+      const stacked = brandVisible && window.matchMedia('(max-width: 880px)').matches;
+      const total = stacked ? brandH + segH + panelH : segH + Math.max(panelH, brandH);
+      // 固定为计算高度：切换时高度不变，且视口过矮时页面可滚动
+      shell.style.height = total + 'px';
     });
-    // 分屏布局：左侧品牌区是常规网格流，高度也需纳入考量
-    const brand = document.querySelector('.auth-brand');
-    if (brand && getComputedStyle(brand).display !== 'none') {
-      maxH = Math.max(maxH, brand.getBoundingClientRect().height);
-    }
-    // 固定为最高面板的高度：切换时高度不变，且视口过矮时页面可滚动
-    shell.style.height = maxH + 'px';
   }
+
+  // ===== 分段切换器：滑块位置与选中态跟随面板 =====
+  const seg = document.getElementById('auth-seg');
+  const segInd = seg.querySelector('.seg-ind');
+  const segBtns = Array.from(seg.querySelectorAll('button'));
+  const segNames = segBtns.map((b) => b.dataset.goto);
+
+  function updateSeg() {
+    const i = Math.max(0, segNames.indexOf(activeName));
+    segInd.style.transform = 'translateX(' + (i * 100) + '%)';
+    segBtns.forEach((b, bi) => {
+      b.classList.toggle('on', bi === i);
+      b.setAttribute('aria-selected', bi === i ? 'true' : 'false');
+    });
+  }
+
+  // 桌面端切换面板时自动聚焦第一个输入框（移动端不弹键盘）
+  const canAutofocus = () => window.matchMedia('(min-width: 881px) and (pointer: fine)').matches;
 
   // 淡入淡出切换（线性）：只切换 .on，高度恒定故不会“抽搐拉长”
   function switchPanel(name) {
@@ -1748,6 +1972,11 @@
     panels.forEach((p) => {
       p.classList.toggle('on', p.id === 'panel-' + name);
     });
+    updateSeg();
+    if (canAutofocus()) {
+      const first = document.getElementById('panel-' + name)?.querySelector('input');
+      if (first) setTimeout(() => first.focus({ preventScroll: true }), 80);
+    }
   }
 
   // 登录 / 注册 切换按钮
@@ -1755,19 +1984,48 @@
     btn.addEventListener('click', () => switchPanel(btn.dataset.goto));
   });
 
-  // 显示 / 隐藏密码
+  // 显示 / 隐藏密码：切换输入框类型并同步眼睛图标
   document.querySelectorAll('.showpwd').forEach((btn) => {
     btn.addEventListener('click', () => {
       const input = document.getElementById(btn.dataset.target);
-      input.type = input.type === 'password' ? 'text' : 'password';
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.classList.toggle('on', show);
+      btn.setAttribute('aria-label', show ? '隐藏密码' : '显示密码');
     });
+  });
+
+  // 忘记密码：给出明确的引导信息，而不是一个跳空的链接
+  document.getElementById('btn-forgot').addEventListener('click', () => {
+    const mail = document.getElementById('login-mail').value.trim();
+    setMsg('login-msg', 'info', mail
+      ? '如需重置 ' + mail + ' 的密码，请发送邮件至 a13828563360@163.com，我们会在 1–2 个工作日内处理。'
+      : '当前版本暂未开放自助找回，请发送邮件至 a13828563360@163.com 与我们联系。');
+  });
+
+  // 注册密码实时强度提示：三段式强度条 + 文案
+  const pwdMeter = document.getElementById('pwd-meter');
+  const pwdHint = document.getElementById('pwd-hint');
+  document.getElementById('reg-pwd').addEventListener('input', (e) => {
+    const v = e.target.value;
+    let score = 0;
+    if (v.length >= 8) score++;
+    if (/[A-Za-z]/.test(v) && /\d/.test(v)) score++;
+    if (/[^A-Za-z0-9\s]/.test(v) || v.length >= 14) score++;
+    pwdMeter.className = 'pwd-meter' + (v ? ' l' + Math.max(1, score) : '');
+    pwdHint.textContent = !v ? '至少 8 位，建议混合字母与数字'
+      : score === 0 ? '强度不足：至少 8 位'
+      : score === 1 ? '强度：一般'
+      : score === 2 ? '强度：良好'
+      : '强度：很强';
   });
 
   // ===== 与后端接口通信 =====
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   const ICON = {
     err: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.4" r="1" fill="currentColor" stroke="none"/></svg>',
-    ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.4 2.7 2.6L16 9.6"/></svg>'
+    ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.4 2.7 2.6L16 9.6"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="1" fill="currentColor" stroke="none"/></svg>'
   };
 
   // 显示 / 清除表单提示；提示会改变面板高度，需重新测量卡片高度
@@ -1801,14 +2059,16 @@
     }
   }
 
-  // 提交按钮的加载态包装
+  // 提交按钮的加载态包装：禁用 + 文案 + 旋转指示器
   async function withLoading(btn, text, fn) {
     const original = btn.textContent;
     btn.disabled = true;
     btn.textContent = text;
+    btn.classList.add('loading');
     try { await fn(); } finally {
       btn.disabled = false;
       btn.textContent = original;
+      btn.classList.remove('loading');
     }
   }
 
@@ -1950,7 +2210,15 @@
   // 取用户名首字作头像文字
   const initialOf = (name) => String(name || '').trim().slice(0, 1).toUpperCase() || '?';
 
-  // 分页切换：顶栏导航与页面里的跳转按钮共用
+  // 页眉文案：与分页一一对应，切换时同步更新主区标题与副标题
+  const APP_TITLES = {
+    intro:    ['产品介绍', '了解 CH music 的核心能力'],
+    download: ['下载链接', '选择适合你设备的安装包'],
+    about:    ['关于我们', '团队、联系方式与版本信息'],
+    me:       ['个人中心', '账号信息与登录状态']
+  };
+
+  // 分页切换：侧边导航与页面里的跳转按钮共用
   function switchTab(name) {
     if (!document.getElementById('page-' + name)) return;
     document.querySelectorAll('.app-tab').forEach((t) => {
@@ -1959,6 +2227,11 @@
     document.querySelectorAll('.app-page').forEach((p) => {
       p.classList.toggle('on', p.id === 'page-' + name);
     });
+    const t = APP_TITLES[name];
+    if (t) {
+      document.getElementById('app-title').textContent = t[0];
+      document.getElementById('app-sub').textContent = t[1];
+    }
     document.getElementById('app-body').scrollTop = 0;
   }
 
@@ -2045,6 +2318,7 @@
     const u = data.user || {};
     appAvatar.textContent = initialOf(u.username);
     appUsername.textContent = u.username || '';
+    document.getElementById('side-mail').textContent = u.email || '已登录';
     meAvatar.textContent = initialOf(u.username);
     meGreet.textContent = dayTimeGreeting() + '，' + (u.username || '');
     meMail.textContent = u.email || '';
@@ -2129,8 +2403,9 @@
     });
   });
 
-  // 初始化：测量高度；等字体加载完成、窗口尺寸变化后再校正
+  // 初始化：测量高度、对齐分段切换器；等字体加载完成、窗口尺寸变化后再校正
   sizeShell();
+  updateSeg();
   if (document.fonts?.ready) {
     document.fonts.ready.then(sizeShell);
   }
