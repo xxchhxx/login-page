@@ -441,16 +441,6 @@ app.post('/api/logout', async (req, res) => {
   res.json({ ok: true, message: '已退出登录' });
 });
 
-/* iOS 液态玻璃效果演示页面 */
-app.get('/glass', (_req, res) => {
-  const demoFile = path.join(__dirname, 'ios-liquid-glass-demo.html');
-  if (!fs.existsSync(demoFile)) {
-    return res.type('text/plain').send('演示页面不存在，请检查文件路径。');
-  }
-  res.set('Cache-Control', 'no-cache, max-age=0, must-revalidate');
-  res.sendFile(demoFile);
-});
-
 /* 本机运行时顺手把首页也发出去。云端（Netlify）只部署 server 目录，取不到上一级的 index.html，
    此时返回一句提示即可，前端页面走 GitHub Pages。 */
 app.get('/', (_req, res) => {
