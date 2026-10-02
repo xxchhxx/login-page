@@ -60,7 +60,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /* ============================ 数据库 ============================ */
 
-const DATA_DIR = path.join(__dirname, 'data');
+// 数据库存放位置：默认 server/data；云端挂载持久卷后用 DATA_DIR 指向挂载点（如 /data），
+// 这样容器重启/重新部署后用户数据不会丢。
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const db = new DatabaseSync(path.join(DATA_DIR, 'app.db'));
 
