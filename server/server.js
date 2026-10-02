@@ -135,9 +135,13 @@ const SQL = {
     'expires_at = excluded.expires_at, sent_at = excluded.sent_at, attempts = 0',
   bumpAttempts: 'UPDATE email_codes SET attempts = attempts + 1 WHERE email = ?',
   deleteCode: 'DELETE FROM email_codes WHERE email = ?',
+  deleteSession: 'DELETE FROM sessions WHERE token = ?',
   purgeCodes: 'DELETE FROM email_codes WHERE expires_at < ?',
   insertSession:
-    'INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)'
+    'INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)',
+  sessionUser:
+    'SELECT u.username, u.email, u.created_at, s.expires_at FROM sessions s ' +
+    'JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?'
 };
 
 /* ============================ 工具函数 ============================ */
@@ -254,8 +258,9 @@ app.use((req, res, next) => {
   if (origin && (allowAllOrigins || allowOrigins.includes(origin))) {
     res.set('Access-Control-Allow-Origin', origin);
     res.set('Vary', 'Origin');
-    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    // 开始界面会用 Authorization: Bearer <token> 调 GET /api/me，预检必须放行该头
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.set('Access-Control-Max-Age', '600');
   }
   if (req.method === 'OPTIONS') return res.sendStatus(204); // 预检请求
@@ -376,7 +381,14 @@ app.post('/api/register', async (req, res) => {
   const token = newToken();
   await run(SQL.insertSession, [token, Number(info.lastInsertRowid), now, now + SESSION_TTL_MS]);
 
-  res.json({ ok: true, token, user: { username, email }, message: '注册成功' });
+  res.json({
+    ok: true,
+    token,
+    user: { username, email },
+    createdAt: now,
+    expiresAt: now + SESSION_TTL_MS,
+    message: '注册成功'
+  });
 });
 
 /** 登录 */
@@ -396,7 +408,37 @@ app.post('/api/login', async (req, res) => {
   const token = newToken();
   await run(SQL.insertSession, [token, Number(user.id), now, now + SESSION_TTL_MS]);
 
-  res.json({ ok: true, token, user: { username: user.username, email: user.email }, message: '登录成功' });
+  res.json({
+    ok: true,
+    token,
+    user: { username: user.username, email: user.email },
+    createdAt: Number(user.created_at),
+    expiresAt: now + SESSION_TTL_MS,
+    message: '登录成功'
+  });
+});
+
+/** 取当前登录用户：开始界面刷新后靠它恢复身份 */
+app.get('/api/me', async (req, res) => {
+  const m = /^Bearer\s+(.+)$/i.exec(String(req.headers.authorization || ''));
+  if (!m) return fail(res, 401, '缺少登录凭证');
+
+  const row = await one(SQL.sessionUser, [m[1], Date.now()]);
+  if (!row) return fail(res, 401, '登录已过期，请重新登录');
+
+  res.json({
+    ok: true,
+    user: { username: row.username, email: row.email },
+    createdAt: Number(row.created_at),
+    expiresAt: Number(row.expires_at)
+  });
+});
+
+/** 退出登录：删掉服务端会话，避免 token 被继续使用 */
+app.post('/api/logout', async (req, res) => {
+  const m = /^Bearer\s+(.+)$/i.exec(String(req.headers.authorization || ''));
+  if (m) await run(SQL.deleteSession, [m[1]]);
+  res.json({ ok: true, message: '已退出登录' });
 });
 
 /* 本机运行时顺手把首页也发出去。云端（Netlify）只部署 server 目录，取不到上一级的 index.html，

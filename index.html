@@ -537,6 +537,74 @@
   .btn:disabled { cursor: default; transform: none; }
   .btn:disabled::after { animation: none; }
 
+  /* ===== 开始界面（登录成功后） ===== */
+  #panel-home { padding: 42px 38px 36px; }
+
+  .home-top {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 24px;
+  }
+  /* 头像沿用 .logo 的渐变与高光，保持同一套玻璃语言 */
+  .home-avatar {
+    width: 54px;
+    height: 54px;
+    flex: none;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    font-size: 21px;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #5fcaff, #2a6dff);
+    box-shadow:
+      0 10px 24px rgba(42, 109, 255, 0.48),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+  .home-top h2 { font-size: 20px; font-weight: 600; letter-spacing: 0.2px; }
+  .home-top .mail {
+    margin-top: 5px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    word-break: break-all;
+  }
+
+  .home-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .home-card {
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--stroke);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+  .home-card .k {
+    display: block;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    letter-spacing: 0.2px;
+  }
+  .home-card .v { font-size: 13.5px; font-weight: 600; }
+  .home-card .v.ok { color: #7cf0b4; }
+
+  /* 次要按钮：退出登录等，不用主色以免与主操作抢视觉 */
+  .btn.ghost {
+    background: rgba(255, 255, 255, 0.10);
+    color: var(--text-primary);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+  .btn.ghost:hover {
+    background: rgba(255, 255, 255, 0.17);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+  .btn.ghost:active { background: rgba(255, 255, 255, 0.09); }
+
   /* ===== 面板切换：淡出 / 淡入（线性） ===== */
   /* 两个面板重叠定位在卡片内，卡片高度由 JS 固定为较高者，
      切换时高度不变、无布局跳动，从而避免“抽搐拉长” */
@@ -759,6 +827,38 @@
         </div>
       </div>
 
+      <!-- ===== 开始界面（登录成功后） ===== -->
+      <div class="panel" id="panel-home">
+        <div class="home-top">
+          <div class="home-avatar" id="home-avatar">·</div>
+          <div>
+            <h2 id="home-greet">欢迎回来</h2>
+            <div class="mail" id="home-mail"></div>
+          </div>
+        </div>
+
+        <div class="home-grid">
+          <div class="home-card">
+            <span class="k">账号状态</span>
+            <span class="v ok">邮箱已验证</span>
+          </div>
+          <div class="home-card">
+            <span class="k">注册时间</span>
+            <span class="v" id="home-created">—</span>
+          </div>
+          <div class="home-card">
+            <span class="k">本次登录</span>
+            <span class="v">刚刚</span>
+          </div>
+          <div class="home-card">
+            <span class="k">登录有效期</span>
+            <span class="v" id="home-expire">—</span>
+          </div>
+        </div>
+
+        <button class="btn ghost" type="button" id="btn-logout">退出登录</button>
+      </div>
+
     </div>
   </div>
 
@@ -894,8 +994,18 @@
   function saveToken(token) {
     if (!token) return;
     const remember = document.getElementById('remember').checked;
+    // 先清掉另一处，避免切换「记住我」后残留旧 token
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     (remember ? localStorage : sessionStorage).setItem('token', token);
   }
+
+  // 「记住我」存 localStorage，否则存 sessionStorage；读取时两处都看
+  const getToken = () => sessionStorage.getItem('token') || localStorage.getItem('token') || '';
+  const clearToken = () => {
+    sessionStorage.removeItem('token');
+    localStorage.removeItem('token');
+  };
 
   // ----- 获取邮箱验证码（60 秒倒计时） -----
   const sendBtn = document.getElementById('btn-send-code');
@@ -956,14 +1066,13 @@
       saveToken(data.token);
       setMsg('reg-msg', 'ok', '注册成功，欢迎你 ' + data.user.username + '！');
 
-      // 注册即已登录：稍后回到登录面板，邮箱已填好
+      // 注册即已登录：预填登录邮箱（退出后可直接登录），稍后进入开始界面
       document.getElementById('login-mail').value = email;
       document.getElementById('login-pwd').value = '';
       setTimeout(() => {
-        switchPanel('login');
         setMsg('reg-msg', '', '');
-        setMsg('login-msg', 'ok', '注册成功，请使用刚才设置的密码登录');
-      }, 1200);
+        enterHome(data);
+      }, 900);
     });
   });
 
@@ -981,7 +1090,84 @@
       if (!ok) return setMsg('login-msg', 'err', data.message || '登录失败');
 
       saveToken(data.token);
-      setMsg('login-msg', 'ok', `登录成功，欢迎回来 ${data.user.username}！`);
+      setMsg('login-msg', '', '');
+      enterHome(data);
+    });
+  });
+
+  // ===== 开始界面（登录成功后） =====
+
+  const homeGreet = document.getElementById('home-greet');
+  const homeAvatar = document.getElementById('home-avatar');
+  const homeMail = document.getElementById('home-mail');
+  const homeCreated = document.getElementById('home-created');
+  const homeExpire = document.getElementById('home-expire');
+
+  // 按当前时段问候
+  function dayTimeGreeting() {
+    const h = new Date().getHours();
+    if (h < 5) return '夜深了';
+    if (h < 11) return '早上好';
+    if (h < 13) return '中午好';
+    if (h < 18) return '下午好';
+    return '晚上好';
+  }
+
+  function formatDate(ms) {
+    const d = new Date(Number(ms));
+    const pad = (n) => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  // 取用户名首字作头像文字
+  const initialOf = (name) => String(name || '').trim().slice(0, 1).toUpperCase() || '?';
+
+  // 进入开始界面：登录 / 注册 / 刷新恢复 三条路径共用
+  function enterHome(data) {
+    const u = data.user || {};
+    homeGreet.textContent = dayTimeGreeting() + '，' + (u.username || '');
+    homeAvatar.textContent = initialOf(u.username);
+    homeMail.textContent = u.email || '';
+    homeCreated.textContent = data.createdAt ? formatDate(data.createdAt) : '—';
+    const days = data.expiresAt
+      ? Math.max(1, Math.ceil((data.expiresAt - Date.now()) / 86400000))
+      : 7;
+    homeExpire.textContent = '剩余 ' + days + ' 天';
+    switchPanel('home');
+  }
+
+  // 刷新页面后凭本地 token 恢复身份；token 已失效就静默留在登录页
+  async function restoreSession() {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(API_URL + '/me', { headers: { Authorization: 'Bearer ' + token } });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data || !data.ok) {
+        clearToken();
+        return;
+      }
+      enterHome(data);
+    } catch {
+      // 后端不可达时不处理，交给用户手动登录
+    }
+  }
+
+  // 退出登录
+  document.getElementById('btn-logout').addEventListener('click', (e) => {
+    withLoading(e.currentTarget, '退出中…', async () => {
+      const token = getToken();
+      if (token) {
+        // 通知后端销毁会话；请求失败也照样完成本地登出
+        await fetch(API_URL + '/logout', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token }
+        }).catch(() => {});
+      }
+      clearToken();
+      document.getElementById('login-pwd').value = '';
+      setMsg('login-msg', '', '');
+      switchPanel('login');
     });
   });
 
@@ -1008,6 +1194,9 @@
     document.fonts.ready.then(sizeShell);
   }
   window.addEventListener('resize', sizeShell);
+
+  // 本地还留着未过期的 token 时，直接回到开始界面
+  restoreSession();
 </script>
 </body>
 </html>
