@@ -13,6 +13,7 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
 const crypto = require('node:crypto');
 const express = require('express');
 const nodemailer = require('nodemailer');
@@ -65,9 +66,19 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TURSO_URL = ENV.TURSO_DATABASE_URL || '';
 const useTurso = Boolean(TURSO_URL);
 
+// 无服务器平台（Netlify / Vercel / Lambda）只有 /tmp 可写且重启即丢，
+// 所以这些环境下必须配置 TURSO_DATABASE_URL；缺失时给一条明确提示，而不是在只读目录里崩溃
+const IS_SERVERLESS = Boolean(ENV.NETLIFY || ENV.AWS_LAMBDA_FUNCTION_NAME || ENV.VERCEL);
+
 let dbUrl;
+let dbConfigError = null;
 if (useTurso) {
   dbUrl = TURSO_URL;
+} else if (IS_SERVERLESS) {
+  dbConfigError =
+    '未配置云数据库：请在 Netlify 的 Environment variables 里设置 TURSO_DATABASE_URL 和 ' +
+    'TURSO_AUTH_TOKEN，然后重新部署（Deploys → Trigger deploy）。';
+  dbUrl = 'file:' + path.join(os.tmpdir(), 'login-app.db').split(path.sep).join('/');
 } else {
   const DATA_DIR = ENV.DATA_DIR || path.join(__dirname, 'data');
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -90,6 +101,7 @@ const SCHEMA = [
 
 // 建表只在服务初始化时执行一次；所有接口都会先等它完成
 const dbReady = (async () => {
+  if (dbConfigError) throw new Error(dbConfigError);
   if (!useTurso) {
     try {
       await client.execute('PRAGMA journal_mode = WAL');
@@ -242,7 +254,8 @@ app.use((_req, res, next) => {
     console.error('[数据库不可用]', err.message);
     res.status(500).json({
       ok: false,
-      message: '数据库连接失败，请检查 TURSO_DATABASE_URL / TURSO_AUTH_TOKEN 配置'
+      message:
+        dbConfigError || '数据库连接失败，请检查 TURSO_DATABASE_URL / TURSO_AUTH_TOKEN 配置'
     });
   });
 });

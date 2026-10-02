@@ -768,8 +768,7 @@
   // ===== 后端地址 =====
   // 页面与后端同源时（本机 node server.js 打开、或直接打开后端公网地址）留空即可。
   // 仅当前端放在 GitHub Pages、后端部署在别处时，才需要填后端公网地址（结尾不要带斜杠）。
-  // 例： const BACKEND_URL = 'https://login-server.onrender.com';
-  const BACKEND_URL = '';
+  const BACKEND_URL = 'https://xxchhxx.netlify.app';
   const SAME_ORIGIN_HOSTS = ['localhost', '127.0.0.1', ''];
   const API_URL =
     (SAME_ORIGIN_HOSTS.indexOf(location.hostname) !== -1 || !BACKEND_URL ? '' : BACKEND_URL) + '/api';
