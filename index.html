@@ -543,7 +543,8 @@
      靠 .stage.app 把舞台加宽，两者之间做淡出 / 淡入切换 */
 
   .stage { transition: width 0.32s ease; }
-  .stage.app { width: min(860px, 94vw); height: min(642px, calc(100vh - 64px)); }
+  /* 桌面端放大：1200×720 的大卡片，窄屏自动收缩 */
+  .stage.app { width: min(1200px, 96vw); height: min(720px, calc(100vh - 64px)); }
 
   .card-shell.hide { opacity: 0; pointer-events: none; }
 
@@ -566,54 +567,54 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
+    gap: 18px;
     flex: none;
-    padding: 17px 24px;
+    padding: 20px 34px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   }
-  .app-brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .app-brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
   .app-brand .mark {
-    width: 34px;
-    height: 34px;
+    width: 42px;
+    height: 42px;
     flex: none;
-    border-radius: 10px;
+    border-radius: 12px;
     display: grid;
     place-items: center;
     background: linear-gradient(135deg, #5fcaff, #2a6dff);
     box-shadow:
-      0 6px 16px rgba(42, 109, 255, 0.42),
+      0 8px 20px rgba(42, 109, 255, 0.42),
       inset 0 1px 0 rgba(255, 255, 255, 0.5);
   }
-  .app-brand .mark svg { width: 19px; height: 19px; }
-  .app-brand b { display: block; font-size: 15px; font-weight: 600; letter-spacing: 0.3px; }
-  .app-brand .sub { display: block; margin-top: 2px; font-size: 11px; color: var(--text-secondary); }
+  .app-brand .mark svg { width: 23px; height: 23px; }
+  .app-brand b { display: block; font-size: 17.5px; font-weight: 600; letter-spacing: 0.3px; }
+  .app-brand .sub { display: block; margin-top: 3px; font-size: 12px; color: var(--text-secondary); }
 
   .app-user {
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 10px;
     flex: none;
     max-width: 46%;
-    padding: 5px 14px 5px 5px;
+    padding: 6px 18px 6px 6px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.09);
     border: 1px solid var(--stroke);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
   .app-user .mini {
-    width: 26px;
-    height: 26px;
+    width: 31px;
+    height: 31px;
     flex: none;
     border-radius: 50%;
     display: grid;
     place-items: center;
-    font-size: 12px;
+    font-size: 13.5px;
     font-weight: 600;
     color: #fff;
     background: linear-gradient(135deg, #5fcaff, #2a6dff);
   }
   .app-user .name {
-    font-size: 13px;
+    font-size: 14px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -622,20 +623,20 @@
   /* --- 导航：四个功能分页 --- */
   .app-nav {
     display: flex;
-    gap: 2px;
+    gap: 4px;
     flex: none;
-    padding: 11px 20px 0;
+    padding: 12px 28px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.10);
   }
   .app-tab {
     position: relative;
     flex: none;
-    padding: 9px 16px 12px;
+    padding: 11px 20px 14px;
     border: none;
     border-radius: 8px 8px 0 0;
     background: none;
     font-family: var(--font);
-    font-size: 13.5px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--text-secondary);
     cursor: pointer;
@@ -648,8 +649,8 @@
   .app-tab::after {
     content: "";
     position: absolute;
-    left: 14px;
-    right: 14px;
+    left: 16px;
+    right: 16px;
     bottom: -1px;
     height: 2px;
     border-radius: 2px;
@@ -664,7 +665,7 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 24px;
+    padding: 32px 34px 36px;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
   }
@@ -685,42 +686,123 @@
 
   /* 占位提示：内容待补充的地方统一用它，替换内容时一并删掉 */
   .todo {
-    margin-bottom: 18px;
-    padding: 11px 14px;
+    margin-bottom: 22px;
+    padding: 13px 18px;
     border-radius: var(--radius-sm);
-    font-size: 12.5px;
-    line-height: 1.65;
+    font-size: 13px;
+    line-height: 1.7;
     color: #ffe6bd;
     background: rgba(255, 190, 92, 0.12);
     border: 1px dashed rgba(255, 200, 120, 0.44);
   }
   .todo b { font-weight: 600; }
 
-  .page-hd { margin-bottom: 18px; }
-  .page-hd h3 { font-size: 17px; font-weight: 600; letter-spacing: 0.2px; }
-  .page-hd p { margin-top: 6px; font-size: 12.5px; line-height: 1.7; color: var(--text-secondary); }
+  .page-hd { margin-bottom: 22px; }
+  .page-hd h3 { font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
+  .page-hd p { margin-top: 8px; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
 
   /* --- 产品介绍 --- */
   .hero {
-    margin-bottom: 16px;
-    padding: 22px 24px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 34px;
+    margin-bottom: 22px;
+    padding: 32px 36px;
     border-radius: var(--radius-lg);
     background: linear-gradient(150deg, rgba(95, 202, 255, 0.20), rgba(42, 109, 255, 0.13));
     border: 1px solid rgba(255, 255, 255, 0.20);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.20);
   }
-  .hero h4 { font-size: 21px; font-weight: 600; letter-spacing: 0.2px; }
-  .hero p { margin-top: 9px; font-size: 13px; line-height: 1.75; color: rgba(255, 255, 255, 0.84); }
-  .hero .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-  .hero .cta .btn { width: auto; height: 40px; padding: 0 22px; font-size: 13.5px; }
+  .hero h4 { font-size: 30px; font-weight: 600; letter-spacing: 0.2px; line-height: 1.3; }
+  .hero .tagline {
+    display: inline-block;
+    margin-bottom: 14px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    color: #d8ecff;
+    background: rgba(95, 202, 255, 0.18);
+    border: 1px solid rgba(95, 202, 255, 0.38);
+  }
+  .hero p { margin-top: 12px; font-size: 14.5px; line-height: 1.8; color: rgba(255, 255, 255, 0.84); }
+  .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+  .hero .cta .btn { width: auto; height: 46px; padding: 0 30px; font-size: 14.5px; }
+
+  /* hero 右侧装饰：唱片 + 律动条，纯 CSS，无图片依赖 */
+  .hero .visual {
+    position: relative;
+    justify-self: center;
+    width: 200px;
+    height: 200px;
+    display: grid;
+    place-items: center;
+  }
+  .hero .disc {
+    width: 176px;
+    height: 176px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background:
+      repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,0.10) 0 2px, rgba(255,255,255,0) 2px 7px),
+      linear-gradient(140deg, #24365f, #101c38);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    box-shadow:
+      0 18px 40px -14px rgba(4, 16, 42, 0.75),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    animation: disc-spin 18s linear infinite;
+  }
+  .hero .disc::after {
+    content: "";
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5fcaff, #2a6dff);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+  @keyframes disc-spin { to { transform: rotate(360deg); } }
+  .hero .bars {
+    position: absolute;
+    left: 50%;
+    bottom: -6px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(8, 20, 44, 0.42);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(10px);
+  }
+  .hero .bars i {
+    width: 3px;
+    border-radius: 2px;
+    background: linear-gradient(to top, #5fcaff, #a98bff);
+    animation: bar-beat 1s ease-in-out infinite;
+  }
+  .hero .bars i:nth-child(1) { height: 40%; animation-delay: 0s; }
+  .hero .bars i:nth-child(2) { height: 75%; animation-delay: 0.12s; }
+  .hero .bars i:nth-child(3) { height: 55%; animation-delay: 0.24s; }
+  .hero .bars i:nth-child(4) { height: 90%; animation-delay: 0.36s; }
+  .hero .bars i:nth-child(5) { height: 48%; animation-delay: 0.48s; }
+  .hero .bars i:nth-child(6) { height: 68%; animation-delay: 0.6s; }
+  @keyframes bar-beat {
+    0%, 100% { transform: scaleY(0.55); }
+    50%      { transform: scaleY(1); }
+  }
 
   .feat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(208px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
   }
   .feat {
-    padding: 16px 17px;
+    padding: 22px 24px;
     border-radius: var(--radius-md);
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid var(--stroke);
@@ -733,46 +815,82 @@
     transform: translateY(-2px);
   }
   .feat .ico {
-    width: 34px;
-    height: 34px;
-    margin-bottom: 11px;
-    border-radius: 10px;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 14px;
+    border-radius: 12px;
     display: grid;
     place-items: center;
     background: rgba(255, 255, 255, 0.13);
     border: 1px solid rgba(255, 255, 255, 0.20);
   }
-  .feat .ico svg { width: 18px; height: 18px; }
-  .feat h5 { font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
-  .feat p { font-size: 12.5px; line-height: 1.65; color: var(--text-secondary); }
+  .feat .ico svg { width: 22px; height: 22px; }
+  .feat h5 { font-size: 15.5px; font-weight: 600; margin-bottom: 8px; }
+  .feat p { font-size: 13.5px; line-height: 1.75; color: var(--text-secondary); }
+
+  /* --- 界面预览：截图占位区（换成真图时删除 .shot 的虚线样式与标签） --- */
+  .section-t { margin: 30px 0 16px; }
+  .section-t h3 { font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
+  .section-t p { margin-top: 8px; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+
+  .shots {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .shot {
+    display: grid;
+    place-items: center;
+    gap: 10px;
+    aspect-ratio: 16 / 10;
+    padding: 18px;
+    text-align: center;
+    border-radius: var(--radius-md);
+    color: #ffe6bd;
+    background: rgba(255, 190, 92, 0.06);
+    border: 1px dashed rgba(255, 200, 120, 0.44);
+  }
+  .shot.wide { grid-column: 1 / -1; aspect-ratio: 21 / 8; }
+  .shot .cam {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 190, 92, 0.12);
+    border: 1px solid rgba(255, 200, 120, 0.34);
+  }
+  .shot .cam svg { width: 20px; height: 20px; }
+  .shot b { display: block; font-size: 14px; font-weight: 600; }
+  .shot span { display: block; margin-top: 4px; font-size: 12.5px; color: rgba(255, 230, 189, 0.72); }
 
   /* --- 下载链接 --- */
   .dl-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(226px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
   }
   .dl-card {
     display: flex;
     flex-direction: column;
-    padding: 16px 17px;
+    padding: 22px 24px;
     border-radius: var(--radius-md);
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid var(--stroke);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
-  .dl-card .top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .dl-card .top svg { width: 20px; height: 20px; flex: none; }
-  .dl-card .top b { font-size: 13.5px; font-weight: 600; }
+  .dl-card .top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .dl-card .top svg { width: 26px; height: 26px; flex: none; }
+  .dl-card .top b { font-size: 16px; font-weight: 600; }
   .dl-card .meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px 14px;
-    margin-bottom: 14px;
-    font-size: 11.5px;
+    gap: 6px 16px;
+    margin-bottom: 18px;
+    font-size: 12.5px;
     color: var(--text-secondary);
   }
-  .dl-card .btn { margin-top: auto; height: 38px; font-size: 13px; }
+  .dl-card .btn { margin-top: auto; height: 44px; font-size: 14.5px; }
   .dl-card .btn:disabled {
     background: rgba(255, 255, 255, 0.07);
     color: var(--text-secondary);
@@ -781,32 +899,32 @@
 
   /* --- 关于我们 / 个人中心 --- */
   .about-block {
-    margin-bottom: 12px;
-    padding: 16px 18px;
+    margin-bottom: 16px;
+    padding: 22px 24px;
     border-radius: var(--radius-md);
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid var(--stroke);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
-  .about-block h5 { font-size: 13.5px; font-weight: 600; margin-bottom: 8px; }
-  .about-block p { font-size: 12.5px; line-height: 1.75; color: var(--text-secondary); }
-  .kv { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 12.5px; }
+  .about-block h5 { font-size: 15.5px; font-weight: 600; margin-bottom: 10px; }
+  .about-block p { font-size: 13.5px; line-height: 1.8; color: var(--text-secondary); }
+  .kv { display: flex; flex-wrap: wrap; gap: 10px 30px; font-size: 13.5px; }
   .kv span { color: var(--text-secondary); }
   .kv b { font-weight: 600; color: var(--text-primary); }
 
-  .me-head { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-  .me-head h4 { font-size: 18px; font-weight: 600; letter-spacing: 0.2px; }
-  .me-head .mail { margin-top: 5px; font-size: 12.5px; color: var(--text-secondary); word-break: break-all; }
+  .me-head { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+  .me-head h4 { font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
+  .me-head .mail { margin-top: 7px; font-size: 13.5px; color: var(--text-secondary); word-break: break-all; }
 
   /* 头像：沿用 .logo 的渐变与高光，保持同一套玻璃语言 */
   .home-avatar {
-    width: 54px;
-    height: 54px;
+    width: 68px;
+    height: 68px;
     flex: none;
-    border-radius: 16px;
+    border-radius: 18px;
     display: grid;
     place-items: center;
-    font-size: 21px;
+    font-size: 26px;
     font-weight: 600;
     color: #fff;
     background: linear-gradient(135deg, #5fcaff, #2a6dff);
@@ -817,12 +935,12 @@
 
   .home-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 24px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
   }
   .home-card {
-    padding: 12px 14px;
+    padding: 18px 20px;
     border-radius: var(--radius-md);
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid var(--stroke);
@@ -830,13 +948,14 @@
   }
   .home-card .k {
     display: block;
-    font-size: 11.5px;
+    font-size: 12.5px;
     color: var(--text-secondary);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     letter-spacing: 0.2px;
   }
-  .home-card .v { font-size: 13.5px; font-weight: 600; }
+  .home-card .v { font-size: 15.5px; font-weight: 600; }
   .home-card .v.ok { color: #7cf0b4; }
+  .btn.ghost.wide { width: auto; min-width: 160px; padding: 0 26px; }
 
   /* 次要按钮：退出登录等，不用主色以免与主操作抢视觉 */
   .btn.ghost {
@@ -850,16 +969,42 @@
   }
   .btn.ghost:active { background: rgba(255, 255, 255, 0.09); }
 
+  /* 中等宽度：四列网格降为两列（窄于此宽度时四列会过于局促） */
+  @media (max-width: 1120px) {
+    .feat-grid, .dl-grid, .shots, .home-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* 中窄屏：hero 由左右分栏改为上下堆叠，避免右侧装饰被挤扁 */
+  @media (max-width: 760px) {
+    .hero { grid-template-columns: 1fr; gap: 26px; padding: 26px 24px; }
+    .app-body { padding: 26px 24px 30px; }
+  }
+
   /* 窄屏：导航横向滚动、用户胶囊只留头像 */
   @media (max-width: 620px) {
     .app-bar { padding: 15px 16px; }
+    .app-brand .mark { width: 36px; height: 36px; border-radius: 10px; }
+    .app-brand .mark svg { width: 20px; height: 20px; }
+    .app-brand b { font-size: 15.5px; }
     .app-nav { padding: 10px 12px 0; overflow-x: auto; scrollbar-width: none; }
     .app-nav::-webkit-scrollbar { display: none; }
-    .app-tab { padding: 8px 12px 11px; font-size: 13px; }
-    .app-tab::after { left: 10px; right: 10px; }
-    .app-body { padding: 18px 16px; }
+    .app-tab { padding: 9px 13px 12px; font-size: 13.5px; }
+    .app-tab::after { left: 11px; right: 11px; }
+    .app-body { padding: 20px 16px 24px; }
     .app-user { padding: 5px; }
     .app-user .name { display: none; }
+    .page-hd h3, .section-t h3 { font-size: 19px; }
+    .page-hd p, .section-t p { font-size: 13px; }
+    .hero { padding: 22px 18px; }
+    .hero h4 { font-size: 22px; }
+    .hero p { font-size: 13.5px; }
+    .hero .cta { margin-top: 18px; }
+    .hero .cta .btn { height: 42px; padding: 0 20px; font-size: 13.5px; }
+    .hero .visual { width: 160px; height: 160px; }
+    .hero .disc { width: 140px; height: 140px; }
+    .hero .disc::after { width: 46px; height: 46px; }
+    .feat-grid, .dl-grid, .shots, .home-grid { grid-template-columns: 1fr; }
+    .shot.wide { aspect-ratio: 16 / 10; }
   }
 
   /* ===== 面板切换：淡出 / 淡入（线性） ===== */
@@ -1096,15 +1241,14 @@
         <div class="app-brand">
           <div class="mark">
             <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="4" width="7" height="7" rx="1.5" fill="#fff" stroke="none"/>
-              <rect x="13" y="4" width="7" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" stroke="none"/>
-              <rect x="4" y="13" width="7" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" stroke="none"/>
-              <rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke="#fff" stroke-width="1.6"/>
+              <path d="M9 18V6.6l9-1.8v10.9"/>
+              <circle cx="6.6" cy="18" r="2.4" fill="#fff" stroke="none"/>
+              <circle cx="15.6" cy="15.7" r="2.4" fill="rgba(255,255,255,0.75)" stroke="none"/>
             </svg>
           </div>
           <div>
-            <b>xxchhxx</b>
-            <span class="sub">产品中心</span>
+            <b>CH music</b>
+            <span class="sub">本地音乐播放器</span>
           </div>
         </div>
 
@@ -1126,16 +1270,19 @@
 
         <!-- ===== 产品介绍 ===== -->
         <section class="app-page on" id="page-intro">
-          <div class="todo">
-            <b>内容待补充：</b>产品介绍尚未制作，这里先按最终排版占好位置。文案确定后替换下方标题、正文与特性卡片即可。
-          </div>
-
           <div class="hero">
-            <h4>邮箱验证码登录，一次接入即可用</h4>
-            <p>从验证码下发到会话管理全部内置：注册、登录、密码加密、频率限制、登录态续期，前后端开箱即用。</p>
-            <div class="cta">
-              <button class="btn" type="button" data-tab="download">前往下载</button>
-              <button class="btn ghost" type="button" data-tab="about">了解更多</button>
+            <div>
+              <span class="tagline">本地播放 · 无需联网</span>
+              <h4>把音乐留在本地，把播放体验做到极致</h4>
+              <p>CH music 是一款专注本地曲库的音乐播放器：不上传任何文件、不依赖网络，扫描一次本地文件夹就能自动整理好专辑与歌手，再配上歌词、均衡器与无损解码，安静地做好一台播放器。</p>
+              <div class="cta">
+                <button class="btn" type="button" data-tab="download">免费下载</button>
+                <button class="btn ghost" type="button" data-tab="about">了解更多</button>
+              </div>
+            </div>
+            <div class="visual" aria-hidden="true">
+              <div class="disc"></div>
+              <div class="bars"><i></i><i></i><i></i><i></i><i></i><i></i></div>
             </div>
           </div>
 
@@ -1143,34 +1290,101 @@
             <div class="feat">
               <div class="ico">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="5" width="18" height="14" rx="2.5"/>
-                  <path d="m3 7 9 6 9-6"/>
+                  <path d="M3 6.8A1.8 1.8 0 0 1 4.8 5h4l1.8 2.2h6.6A1.8 1.8 0 0 1 19 9v8.2A1.8 1.8 0 0 1 17.2 19H4.8A1.8 1.8 0 0 1 3 17.2V6.8Z"/>
                 </svg>
               </div>
-              <h5>邮箱验证码</h5>
-              <p>6 位数字验证码 10 分钟内有效，发送带 60 秒冷却与同一 IP 的频率限制。</p>
+              <h5>本地曲库管理</h5>
+              <p>选中文件夹一键扫描，自动读取歌曲标签，按专辑、歌手、文件夹归好类，上千首也不乱。</p>
             </div>
 
             <div class="feat">
               <div class="ico">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M6 10V8a6 6 0 0 1 12 0v2"/>
-                  <rect x="4.5" y="10" width="15" height="10" rx="2.5"/>
+                  <path d="M9 18V6.6l9-1.8v10.9"/>
+                  <circle cx="6.6" cy="18" r="2.4"/>
+                  <circle cx="15.6" cy="15.7" r="2.4"/>
                 </svg>
               </div>
-              <h5>密码安全</h5>
-              <p>scrypt 加盐哈希存储，登录采用恒定时间比较，原始密码不落库、不回传。</p>
+              <h5>全格式无损解码</h5>
+              <p>支持 MP3 / FLAC / APE / WAV / M4A / OGG 等常见格式，解码输出保持原始音质。</p>
             </div>
 
             <div class="feat">
               <div class="ico">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="9"/>
-                  <path d="M12 7.5V12l3 2"/>
+                  <path d="M4 6.5h9"/>
+                  <path d="M4 12h16"/>
+                  <path d="M4 17.5h11"/>
                 </svg>
               </div>
-              <h5>会话管理</h5>
-              <p>Bearer 令牌有效期 7 天，支持刷新页面自动恢复登录态与主动退出销毁会话。</p>
+              <h5>歌词与桌面歌词</h5>
+              <p>LRC 歌词自动匹配，逐字高亮跟唱，还能把歌词单独悬停在桌面随时看。</p>
+            </div>
+
+            <div class="feat">
+              <div class="ico">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 20v-7"/><path d="M5 9V4"/>
+                  <path d="M12 20v-4"/><path d="M12 12V4"/>
+                  <path d="M19 20v-9"/><path d="M19 7V4"/>
+                  <circle cx="5" cy="11" r="1.7"/>
+                  <circle cx="12" cy="14" r="1.7"/>
+                  <circle cx="19" cy="9" r="1.7"/>
+                </svg>
+              </div>
+              <h5>均衡器与音效</h5>
+              <p>十段均衡器、多种预设音效与淡入淡出、音量均衡，听感随手可调。</p>
+            </div>
+          </div>
+
+          <div class="section-t">
+            <h3>界面预览</h3>
+            <p>先按最终排版占好位置，拿到真实截图后替换进对应的框内即可。</p>
+          </div>
+
+          <div class="shots">
+            <div class="shot wide">
+              <div class="cam">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ffe6bd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.9l1.2-1.9h6.8L16.6 6h1.9A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-8Z"/>
+                  <circle cx="12" cy="12.5" r="3.4"/>
+                </svg>
+              </div>
+              <b>截图待替换</b>
+              <span>主界面 · 本地曲库与播放列表面板</span>
+            </div>
+
+            <div class="shot">
+              <div class="cam">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ffe6bd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.9l1.2-1.9h6.8L16.6 6h1.9A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-8Z"/>
+                  <circle cx="12" cy="12.5" r="3.4"/>
+                </svg>
+              </div>
+              <b>截图待替换</b>
+              <span>播放页 · 专辑封面与逐字歌词</span>
+            </div>
+
+            <div class="shot">
+              <div class="cam">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ffe6bd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.9l1.2-1.9h6.8L16.6 6h1.9A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-8Z"/>
+                  <circle cx="12" cy="12.5" r="3.4"/>
+                </svg>
+              </div>
+              <b>截图待替换</b>
+              <span>均衡器 · 音效与播放设置</span>
+            </div>
+
+            <div class="shot">
+              <div class="cam">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ffe6bd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.9l1.2-1.9h6.8L16.6 6h1.9A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-8Z"/>
+                  <circle cx="12" cy="12.5" r="3.4"/>
+                </svg>
+              </div>
+              <b>截图待替换</b>
+              <span>设置 · 曲库扫描与快捷键</span>
             </div>
           </div>
         </section>
@@ -1178,12 +1392,12 @@
         <!-- ===== 下载链接 ===== -->
         <section class="app-page" id="page-download">
           <div class="todo">
-            <b>链接待补充：</b>各平台下载地址尚未确定，按钮暂时置灰。拿到真实地址后，把下面的 button 换成带 href 的 a 标签即可。
+            <b>链接待补充：</b>各平台安装包尚未发布，按钮暂时置灰。拿到真实下载地址后，把下面的 button 换成带 href 的 a 标签即可。
           </div>
 
           <div class="page-hd">
             <h3>选择你的平台</h3>
-            <p>同一个账号可在任意平台登录，数据实时同步。</p>
+            <p>同一个账号可在任意设备登录，收藏与播放列表实时同步；安装包体积小，装完即可离线播放本地音乐。</p>
           </div>
 
           <div class="dl-grid">
@@ -1194,7 +1408,7 @@
                 </svg>
                 <b>Windows</b>
               </div>
-              <div class="meta"><span>v1.0.0</span><span>64 位</span><span>约 68 MB</span></div>
+              <div class="meta"><span>v1.0.0</span><span>Windows 10 / 11 · 64 位</span><span>约 68 MB</span></div>
               <button class="btn" type="button" disabled>即将推出</button>
             </div>
 
@@ -1220,7 +1434,7 @@
                 </svg>
                 <b>Android</b>
               </div>
-              <div class="meta"><span>v1.0.0</span><span>APK</span><span>约 32 MB</span></div>
+              <div class="meta"><span>v1.0.0</span><span>Android 8.0+ · APK</span><span>约 32 MB</span></div>
               <button class="btn" type="button" disabled>即将推出</button>
             </div>
 
@@ -1245,20 +1459,20 @@
           </div>
 
           <div class="page-hd">
-            <h3>关于我们</h3>
-            <p>专注账号与身份方向的小团队。</p>
+            <h3>关于 CH music</h3>
+            <p>我们只想认真做一款本地音乐播放器。</p>
           </div>
 
           <div class="about-block">
             <h5>我们是谁</h5>
-            <p>我们把「注册、登录、找回密码」这类反复造轮子的环节做成开箱即用的组件，希望能省下你重复调试验证码与登录态的时间。</p>
+            <p>CH music 由一个小团队开发与维护。我们不喜欢为了听几首本地音乐就必须登录、上传、看广告，所以把它做成了一款纯粹的播放器：曲库放在你自己的硬盘上，扫描、播放、整理全部在本地完成。你在这里看到的账号只用于同步收藏与播放列表，音乐文件永远不上传。</p>
           </div>
 
           <div class="about-block">
             <h5>联系我们</h5>
             <div class="kv">
               <span>邮箱 <b>xxchhxx@163.com</b></span>
-              <span>反馈 <b>GitHub Issues</b></span>
+              <span>问题反馈 <b>GitHub Issues</b></span>
               <span>响应时间 <b>1–2 个工作日</b></span>
             </div>
           </div>
@@ -1266,9 +1480,9 @@
           <div class="about-block">
             <h5>版本信息</h5>
             <div class="kv">
-              <span>版本 <b>v1.0.0</b></span>
+              <span>最新版本 <b>v1.0.0</b></span>
               <span>更新日期 <b>2026-10-02</b></span>
-              <span>技术栈 <b>Node.js · Express · Turso</b></span>
+              <span>支持平台 <b>Windows · macOS · Android · iOS</b></span>
             </div>
           </div>
         </section>
@@ -1302,7 +1516,12 @@
             </div>
           </div>
 
-          <button class="btn ghost" type="button" id="btn-logout">退出登录</button>
+          <div class="about-block">
+            <h5>账号说明</h5>
+            <p>该账号仅用于同步收藏、播放列表与播放进度；本地音乐文件始终保存在你自己的设备上，不会上传到服务器。</p>
+          </div>
+
+          <button class="btn ghost wide" type="button" id="btn-logout">退出登录</button>
         </section>
 
       </div>
