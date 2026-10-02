@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · Windows 11 风格</title>
+<style>
+  /* ===== 基础重置 ===== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --accent: #0078D4;
+    --accent-hover: #106EBE;
+    --accent-press: #005A9E;
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.68);
+    --stroke: rgba(255, 255, 255, 0.24);
+    --stroke-strong: rgba(255, 255, 255, 0.42);
+    /* 玻璃层：外层底色 + 内层高光 */
+    --glass-tint: rgba(255, 255, 255, 0.13);
+    --glass-tint-2: rgba(255, 255, 255, 0.05);
+    --radius-lg: 20px;
+    --radius-md: 10px;
+    --radius-sm: 6px;
+    /* 统一的间距节奏 */
+    --space-1: 8px;
+    --space-2: 14px;
+    --space-3: 20px;
+    --space-4: 32px;
+    --font: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  html { height: 100%; }
+
+  body {
+    font-family: var(--font);
+    color: var(--text-primary);
+    min-height: 100%;
+    /* 视口过矮时可纵向滚动，避免卡片内容被裁切 */
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 32px 0;
+    -webkit-font-smoothing: antialiased;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(120% 120% at 12% 8%, #7ea6e8 0%, #4c7fd6 26%, #2b5fc4 52%, #16356a 80%, #0a1f42 100%);
+    background-attachment: fixed;
+  }
+
+  /* ===== 背景漂浮光斑（Acrylic 背景氛围） ===== */
+  .bg {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .bg::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 85vmax;
+    height: 85vmax;
+    transform: translate(-50%, -50%);
+    background:
+      radial-gradient(circle at 25% 25%, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0) 45%),
+      radial-gradient(circle at 75% 65%, rgba(94, 181, 255, 0.55) 0%, rgba(94,181,255,0) 40%),
+      radial-gradient(circle at 70% 15%, rgba(166, 130, 255, 0.5) 0%, rgba(166,130,255,0) 38%);
+    filter: blur(6px);
+  }
+  /* 玻璃质感需要背景有“可被模糊的细节”，这里加一层细网格纹理 */
+  .bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(circle at 50% 45%, #000 0%, rgba(0,0,0,0.35) 55%, transparent 78%);
+    -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, rgba(0,0,0,0.35) 55%, transparent 78%);
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(46px);
+    opacity: 0.6;
+    animation: float ease-in-out infinite;
+  }
+  .blob.a { width: 380px; height: 380px; left: 10%; top: 12%; background: #4a92ff; animation-duration: 16s; }
+  .blob.b { width: 300px; height: 300px; right: 12%; bottom: 10%; background: #9a6cff; animation-duration: 20s; }
+  .blob.c { width: 230px; height: 230px; left: 58%; top: 62%; background: #34d0ff; animation-duration: 24s; }
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(24px, -30px); }
+  }
+
+  /* ===== 背景星光闪烁 ===== */
+  .stars {
+    position: absolute;
+    inset: 0;
+    z-index: 1; /* 盖在光斑与网格之上 */
+    pointer-events: none;
+  }
+  .star {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow:
+      0 0 6px rgba(255, 255, 255, 0.85),
+      0 0 12px rgba(160, 210, 255, 0.55);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.55);
+    animation-name: twinkle;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.08; transform: translate(-50%, -50%) scale(0.55); }
+    50%      { opacity: 1;    transform: translate(-50%, -50%) scale(1); }
+  }
+  /* 较亮的星点带十字星芒 */
+  .star.big::before,
+  .star.big::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.9), transparent);
+  }
+  .star.big::before { width: 1px; height: 14px; transform: translate(-50%, -50%); }
+  .star.big::after {
+    width: 14px;
+    height: 1px;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.9), transparent);
+  }
+
+  /* ===== 卡片容器（玻璃主体） ===== */
+  .stage {
+    position: relative;
+    z-index: 1;
+    width: min(440px, 92vw);
+  }
+
+  .card-shell {
+    position: relative;
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+    padding: 0; /* 内边距由 .panel 承担（绝对定位子元素不受 padding 影响） */
+    height: 464px; /* 兜底高度，加载完成后 JS 依据“较高面板”重新设定 */
+    /* 双层背景：内层玻璃底色(padding-box) + 外沿渐变高光(border-box) 形成玻璃边缘 */
+    background:
+      linear-gradient(160deg, var(--glass-tint) 0%, var(--glass-tint-2) 100%) padding-box,
+      linear-gradient(150deg,
+        rgba(255, 255, 255, 0.85) 0%,
+        rgba(255, 255, 255, 0.18) 22%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.20) 78%,
+        rgba(255, 255, 255, 0.70) 100%) border-box;
+    box-shadow:
+      0 18px 50px -12px rgba(4, 16, 42, 0.60),
+      0 4px 14px rgba(4, 16, 42, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      inset 0 0 40px rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(34px) saturate(185%) brightness(1.06);
+    -webkit-backdrop-filter: blur(34px) saturate(185%) brightness(1.06);
+    overflow: hidden;
+    isolation: isolate;
+    transition: box-shadow 0.35s ease;
+  }
+  /* 顶部玻璃反光 */
+  .card-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.02) 42%, rgba(255,255,255,0) 100%);
+  }
+  /* 悬浮流光：一道斜向光带从卡片上掠过 */
+  .card-shell::after {
+    content: "";
+    position: absolute;
+    top: -25%;
+    bottom: -25%;
+    left: -35%;
+    width: 32%;
+    pointer-events: none;
+    z-index: 4;
+    opacity: 0;
+    background: linear-gradient(to right,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.14) 35%,
+      rgba(255, 255, 255, 0.42) 50%,
+      rgba(255, 255, 255, 0.14) 65%,
+      rgba(255, 255, 255, 0) 100%);
+    transform: translateX(-220%) skewX(-16deg);
+  }
+  .card-shell:hover {
+    box-shadow:
+      0 22px 60px -12px rgba(4, 16, 42, 0.68),
+      0 4px 16px rgba(4, 16, 42, 0.30),
+      inset 0 1px 0 rgba(255, 255, 255, 0.62),
+      inset 0 0 46px rgba(255, 255, 255, 0.09);
+  }
+  .card-shell:hover::after {
+    animation: shine-sweep 1.15s ease-out;
+  }
+  @keyframes shine-sweep {
+    0%   { opacity: 0; transform: translateX(-220%) skewX(-16deg); }
+    14%  { opacity: 1; }
+    86%  { opacity: 1; }
+    100% { opacity: 0; transform: translateX(560%) skewX(-16deg); }
+  }
+
+  /* 细磨砂颗粒，增强玻璃质感 */
+  .grain {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0.16;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  /* 跟随鼠标的柔光，与光带叠加形成“流光” */
+  .glow {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%),
+      rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.06) 42%, transparent 70%);
+  }
+  .card-shell:hover .glow { opacity: 1; }
+
+  /* ===== 主标题 ===== */
+  .brand {
+    text-align: center;
+    margin-bottom: 34px;
+    position: relative;
+  }
+  .brand .logo {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 18px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #5fcaff, #2a6dff);
+    box-shadow:
+      0 10px 24px rgba(42, 109, 255, 0.48),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+  .brand .logo svg { width: 30px; height: 30px; }
+  .brand h1 { font-size: 27px; font-weight: 600; letter-spacing: 0.2px; }
+
+  /* ===== 表单通用 ===== */
+  .field { margin-bottom: 20px; position: relative; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 9px;
+    letter-spacing: 0.2px;
+  }
+  .input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid var(--stroke);
+    border-radius: var(--radius-md);
+    padding: 0 16px;
+    height: 50px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .input-wrap:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: var(--stroke-strong);
+  }
+  .input-wrap:focus-within {
+    background: rgba(255, 255, 255, 0.17);
+    border-color: #8ecdff;
+    box-shadow:
+      0 0 0 3px rgba(124, 196, 255, 0.28),
+      0 6px 18px -6px rgba(58, 130, 255, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+  .input-wrap svg { width: 18px; height: 18px; flex: none; color: var(--text-secondary); transition: color 0.2s ease; }
+  .input-wrap:focus-within svg { color: #b9e4ff; }
+  .input-wrap input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: var(--font);
+    font-size: 15px;
+    height: 100%;
+  }
+  .input-wrap input::placeholder { color: rgba(255, 255, 255, 0.42); }
+  /* 隐藏 Edge/IE 自带的密码显示按钮，避免与自定义按钮重复出现两个眼睛 */
+  .input-wrap input::-ms-reveal,
+  .input-wrap input::-ms-clear { display: none; }
+
+  .showpwd {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: grid;
+    place-items: center;
+    padding: 4px;
+    border-radius: 5px;
+  }
+  .showpwd:hover { color: var(--text-primary); }
+  .showpwd svg { width: 18px; height: 18px; }
+
+  /* ===== 记住我 / 忘记密码 ===== */
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 4px 0 24px;
+    font-size: 13px;
+  }
+  .row a { color: #a9d9ff; text-decoration: none; transition: color 0.16s ease; }
+  .row a:hover { color: #d6ecff; text-decoration: underline; }
+  .check { display: flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; color: var(--text-secondary); transition: color 0.16s ease; }
+  .check:hover { color: var(--text-primary); }
+  .check input { position: absolute; opacity: 0; pointer-events: none; }
+
+  .check .box {
+    width: 19px; height: 19px;
+    flex: none;
+    border-radius: 6px;
+    border: 1px solid var(--stroke);
+    background: rgba(255,255,255,0.08);
+    display: grid;
+    place-items: center;
+    transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  }
+  .check:hover .box { border-color: var(--stroke-strong); }
+  .check .box::after {
+    content: "";
+    width: 9px; height: 5px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) translate(1px, -1px);
+    opacity: 0;
+  }
+  .check input:checked + .box {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.28);
+  }
+  .check input:checked + .box::after { opacity: 1; }
+
+  /* ===== 主按钮 ===== */
+  .btn {
+    position: relative;
+    width: 100%;
+    height: 50px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: #fff;
+    background: linear-gradient(180deg, #1a8cff 0%, var(--accent) 100%);
+    box-shadow:
+      0 8px 20px -8px rgba(0, 120, 212, 0.85),
+      inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    cursor: pointer;
+    overflow: hidden;
+    transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.08s ease;
+  }
+  /* 按钮流光：hover 时光带扫过 */
+  .btn::after {
+    content: "";
+    position: absolute;
+    top: -40%;
+    bottom: -40%;
+    left: -30%;
+    width: 30%;
+    pointer-events: none;
+    background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.55), rgba(255,255,255,0));
+    transform: translateX(-260%) skewX(-20deg);
+  }
+  .btn:hover {
+    background: linear-gradient(180deg, #2f97ff 0%, var(--accent-hover) 100%);
+    box-shadow:
+      0 10px 26px -8px rgba(0, 140, 255, 0.95),
+      inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  }
+  .btn:hover::after { animation: btn-shine 0.9s ease-out; }
+  .btn:active { background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent-press) 100%); transform: scale(0.985); }
+  .btn:focus-visible { box-shadow: 0 0 0 3px rgba(124,196,255,0.5); outline: none; }
+  @keyframes btn-shine {
+    0%   { transform: translateX(-260%) skewX(-20deg); }
+    100% { transform: translateX(560%) skewX(-20deg); }
+  }
+
+  /* ===== 分隔与切换 ===== */
+  .switch-hint {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+  }
+  .switch-hint button {
+    background: none;
+    border: none;
+    color: #a9d9ff;
+    font-family: var(--font);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: var(--radius-sm);
+    transition: color 0.16s ease, background 0.16s ease;
+  }
+  .switch-hint button:hover { color: #e2f1ff; background: rgba(255, 255, 255, 0.10); text-decoration: none; }
+  .switch-hint .dot { margin: 0 2px; color: rgba(255, 255, 255, 0.30); }
+
+  /* ===== 关于我们 / 公告 ===== */
+  #panel-about .brand { margin-bottom: 22px; }
+  .brand .sub {
+    margin-top: 7px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+  }
+
+  .notice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 272px;
+    overflow-y: auto;
+    padding-right: 8px;
+    /* 简约式滚动条（Firefox） */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+  }
+  /* 简约式滚动条（Chromium/WebKit） */
+  .notice-list::-webkit-scrollbar { width: 6px; }
+  .notice-list::-webkit-scrollbar-track { background: transparent; }
+  .notice-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.24);
+    border-radius: 3px;
+  }
+  .notice-list::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+
+  .notice {
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--stroke);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+  .notice:hover {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: var(--stroke-strong);
+    transform: translateY(-1px);
+  }
+  .notice .meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 7px;
+  }
+  .notice .tag {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.6;
+    padding: 0 8px;
+    border-radius: 999px;
+    color: #fff;
+    background: var(--accent);
+  }
+  .notice .tag.new { background: #4cc2ff; color: #06213c; }
+  .notice h3 { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+  .notice p { font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); }
+
+  /* ===== 面板切换：淡出 / 淡入（线性） ===== */
+  /* 两个面板重叠定位在卡片内，卡片高度由 JS 固定为较高者，
+     切换时高度不变、无布局跳动，从而避免“抽搐拉长” */
+  .panel {
+    position: absolute;
+    inset: 0;
+    z-index: 1; /* 位于玻璃反光/颗粒层之下、卡片内容之上 */
+    box-sizing: border-box;
+    padding: 48px 42px 40px; /* 面板自行承担卡片内边距 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* 较矮的面板内容垂直居中 */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.26s linear;
+  }
+  .panel.on {
+    opacity: 1;
+    pointer-events: auto;
+  }
+</style>
+</head>
+<body>
+  <div class="bg">
+    <div class="blob a"></div>
+    <div class="blob b"></div>
+    <div class="blob c"></div>
+    <div class="stars" id="stars"></div>
+  </div>
+
+  <div class="stage">
+    <div class="card-shell">
+      <div class="grain" aria-hidden="true"></div>
+      <div class="glow" aria-hidden="true"></div>
+
+      <!-- ===== 登录面板 ===== -->
+      <form class="panel on" id="panel-login" autocomplete="off">
+        <div class="brand">
+          <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="7" height="7" rx="1.5" fill="#fff" stroke="none"/>
+              <rect x="13" y="4" width="7" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" stroke="none"/>
+              <rect x="4" y="13" width="7" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" stroke="none"/>
+              <rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke="#fff" stroke-width="1.6"/>
+            </svg>
+          </div>
+          <h1>登录</h1>
+        </div>
+
+        <div class="field">
+          <label for="login-account">用户名或邮箱</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5"/>
+            </svg>
+            <input id="login-account" type="text" placeholder="请输入用户名或邮箱">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="login-pwd">密码</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 10V8a6 6 0 0 1 12 0v2"/>
+              <rect x="4.5" y="10" width="15" height="10" rx="2.5"/>
+            </svg>
+            <input id="login-pwd" type="password" placeholder="请输入密码">
+            <button class="showpwd" type="button" data-target="login-pwd" aria-label="显示密码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="row">
+          <label class="check">
+            <input type="checkbox">
+            <span class="box"></span>
+            记住我
+          </label>
+          <a href="#">忘记密码?</a>
+        </div>
+
+        <button class="btn" type="button">登录</button>
+
+        <div class="switch-hint">
+          还没有账户?
+          <button type="button" data-goto="register">注册</button>
+          <span class="dot">·</span>
+          <button type="button" data-goto="about">关于我们</button>
+        </div>
+      </form>
+
+      <!-- ===== 注册面板 ===== -->
+      <form class="panel" id="panel-register" autocomplete="off">
+        <div class="brand">
+          <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="7" height="7" rx="1.5" fill="#fff" stroke="none"/>
+              <rect x="13" y="4" width="7" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" stroke="none"/>
+              <rect x="4" y="13" width="7" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" stroke="none"/>
+              <rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke="#fff" stroke-width="1.6"/>
+            </svg>
+          </div>
+          <h1>创建账户</h1>
+        </div>
+
+        <div class="field">
+          <label for="reg-user">用户名</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5"/>
+            </svg>
+            <input id="reg-user" type="text" placeholder="请输入用户名">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="reg-mail">邮箱</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2.5"/>
+              <path d="m3 7 9 6 9-6"/>
+            </svg>
+            <input id="reg-mail" type="email" placeholder="请输入邮箱">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="reg-pwd">密码</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 10V8a6 6 0 0 1 12 0v2"/>
+              <rect x="4.5" y="10" width="15" height="10" rx="2.5"/>
+            </svg>
+            <input id="reg-pwd" type="password" placeholder="请设置密码">
+            <button class="showpwd" type="button" data-target="reg-pwd" aria-label="显示密码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button class="btn" type="button">注册</button>
+
+        <div class="switch-hint">
+          已有账户?
+          <button type="button" data-goto="login">登录</button>
+          <span class="dot">·</span>
+          <button type="button" data-goto="about">关于我们</button>
+        </div>
+      </form>
+
+      <!-- ===== 关于我们 / 公告面板 ===== -->
+      <div class="panel" id="panel-about">
+        <div class="brand">
+          <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 11v6"/>
+              <circle cx="12" cy="7.6" r="1.1" fill="#fff" stroke="none"/>
+            </svg>
+          </div>
+          <h1>关于我们</h1>
+          <div class="sub">平台公告与更新</div>
+        </div>
+
+        <div class="notice-list">
+          <article class="notice">
+            <div class="meta"><span class="tag">置顶</span><time>2026-10-01</time></div>
+            <h3>系统维护通知</h3>
+            <p>10 月 3 日 02:00–04:00 进行例行维护，期间登录与注册可能短暂不可用，请提前安排。</p>
+          </article>
+
+          <article class="notice">
+            <div class="meta"><span class="tag new">新版本</span><time>2026-09-28</time></div>
+            <h3>v1.2.0 更新发布</h3>
+            <p>新增登录保护与设备管理，优化注册流程；修复部分设备上密码可见性切换异常的问题。</p>
+          </article>
+
+          <article class="notice">
+            <div class="meta"><time>2026-09-20</time></div>
+            <h3>隐私政策更新</h3>
+            <p>我们更新了隐私政策中关于数据存储与账号注销的说明，继续使用即表示您已知悉并同意。</p>
+          </article>
+
+          <article class="notice">
+            <div class="meta"><time>2026-09-12</time></div>
+            <h3>欢迎使用</h3>
+            <p>感谢你的到来。账号相关问题可通过页面底部的联系方式与我们取得联系。</p>
+          </article>
+        </div>
+
+        <div class="switch-hint">
+          <button type="button" data-goto="login">返回登录</button>
+          <span class="dot">·</span>
+          <button type="button" data-goto="register">注册账户</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+  const FADE_MS = 260; // 与 CSS 中 transition 时长保持一致（线性）
+
+  // ===== 背景星光：随机分布、错峰闪烁 =====
+  (function makeStars() {
+    const box = document.getElementById('stars');
+    const COUNT = 70;
+    for (let i = 0; i < COUNT; i++) {
+      const big = Math.random() < 0.18;          // 少量亮点带十字星芒
+      const size = big ? 2.4 + Math.random() * 2 : 1 + Math.random() * 1.4;
+      const s = document.createElement('span');
+      s.className = big ? 'star big' : 'star';
+      s.style.left = Math.random() * 100 + '%';
+      s.style.top = Math.random() * 100 + '%';
+      s.style.width = size.toFixed(2) + 'px';
+      s.style.height = size.toFixed(2) + 'px';
+      s.style.animationDuration = (2.2 + Math.random() * 3.6).toFixed(2) + 's';
+      // 负延迟让星点从动画中途开始，避免同时亮起
+      s.style.animationDelay = (-Math.random() * 6).toFixed(2) + 's';
+      box.appendChild(s);
+    }
+  })();
+
+  const shell = document.querySelector('.card-shell');
+  const panels = Array.from(document.querySelectorAll('.panel'));
+  let activeName = 'login';
+
+  // 让卡片高度始终等于“较高的面板”，切换时高度不变，避免布局跳动
+  function sizeShell() {
+    shell.style.height = 'auto';
+    let maxH = 0;
+    panels.forEach((p) => {
+      // 临时转为静态参与布局以量取自然高度
+      const prev = { pos: p.style.position, op: p.style.opacity };
+      p.style.position = 'static';
+      p.style.opacity = '1';
+      void p.offsetWidth;
+      maxH = Math.max(maxH, p.getBoundingClientRect().height);
+      p.style.position = prev.pos;
+      p.style.opacity = prev.op;
+    });
+    // 固定为最高面板的高度：切换时高度不变，且视口过矮时页面可滚动
+    shell.style.height = maxH + 'px';
+  }
+
+  // 淡入淡出切换（线性）：只切换 .on，高度恒定故不会“抽搐拉长”
+  function switchPanel(name) {
+    if (name === activeName) return;
+    activeName = name;
+    panels.forEach((p) => {
+      p.classList.toggle('on', p.id === 'panel-' + name);
+    });
+  }
+
+  // 登录 / 注册 切换按钮
+  document.querySelectorAll('[data-goto]').forEach((btn) => {
+    btn.addEventListener('click', () => switchPanel(btn.dataset.goto));
+  });
+
+  // 显示 / 隐藏密码
+  document.querySelectorAll('.showpwd').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.target);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    });
+  });
+
+  // 登录 / 注册按钮 —— 暂不限制，直接占位（后端逻辑后续完善）
+  document.querySelectorAll('.card-shell .btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const form = btn.closest('form');
+      const mode = form.id === 'panel-login' ? '登录' : '注册';
+      console.log(`[${mode}] 暂不限制，点击有效（后端逻辑后续完善）`);
+    });
+  });
+
+  // 跟随鼠标的柔光：把光标位置写入 CSS 变量，驱动 .glow 的径向高光
+  shell.addEventListener('pointermove', (e) => {
+    const r = shell.getBoundingClientRect();
+    shell.style.setProperty('--mx', ((e.clientX - r.left) / r.width) * 100 + '%');
+    shell.style.setProperty('--my', ((e.clientY - r.top) / r.height) * 100 + '%');
+  });
+
+  // 初始化：测量高度；等字体加载完成、窗口尺寸变化后再校正
+  sizeShell();
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(sizeShell);
+  }
+  window.addEventListener('resize', sizeShell);
+</script>
+</body>
+</html>
