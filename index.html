@@ -14,14 +14,16 @@
     --accent-press: #005A9E;
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.68);
-    --stroke: rgba(255, 255, 255, 0.24);
-    --stroke-strong: rgba(255, 255, 255, 0.42);
-    /* 玻璃层：外层底色 + 内层高光 */
-    --glass-tint: rgba(255, 255, 255, 0.13);
-    --glass-tint-2: rgba(255, 255, 255, 0.05);
-    --radius-lg: 20px;
-    --radius-md: 10px;
-    --radius-sm: 6px;
+    --stroke: rgba(255, 255, 255, 0.20);
+    --stroke-strong: rgba(255, 255, 255, 0.38);
+    /* 液态玻璃：主层底色只是一层薄白，通透感靠模糊与边缘高光塑造。
+       --glass-edge 用于内层子卡片的细描边，形成同心圆角层级 */
+    --glass-tint: rgba(255, 255, 255, 0.08);
+    --glass-tint-2: rgba(255, 255, 255, 0.02);
+    --glass-edge: rgba(255, 255, 255, 0.28);
+    --radius-lg: 26px;
+    --radius-md: 14px;
+    --radius-sm: 9px;
     /* 统一的间距节奏 */
     --space-1: 8px;
     --space-2: 14px;
@@ -145,39 +147,54 @@
 
   .card-shell {
     position: relative;
-    border: 1px solid transparent;
+    border: 0; /* 不再用实色描边，边缘高光交给 ::before 的镜面光环 */
     border-radius: var(--radius-lg);
     padding: 0; /* 内边距由 .panel 承担（绝对定位子元素不受 padding 影响） */
     height: 464px; /* 兜底高度，加载完成后 JS 依据“较高面板”重新设定 */
-    /* 双层背景：内层玻璃底色(padding-box) + 外沿渐变高光(border-box) 形成玻璃边缘 */
+    /* 液态玻璃主体：极薄的白色底 + 顶部自然光反射；
+       边缘不靠实色描边，而是由 ::before 的镜面高光环勾勒 */
     background:
-      linear-gradient(160deg, var(--glass-tint) 0%, var(--glass-tint-2) 100%) padding-box,
-      linear-gradient(150deg,
-        rgba(255, 255, 255, 0.85) 0%,
-        rgba(255, 255, 255, 0.18) 22%,
-        rgba(255, 255, 255, 0.06) 50%,
-        rgba(255, 255, 255, 0.20) 78%,
-        rgba(255, 255, 255, 0.70) 100%) border-box;
+      linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 34%, rgba(255, 255, 255, 0) 62%),
+      linear-gradient(165deg, var(--glass-tint) 0%, var(--glass-tint-2) 100%);
     box-shadow:
-      0 18px 50px -12px rgba(4, 16, 42, 0.60),
-      0 4px 14px rgba(4, 16, 42, 0.28),
-      inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      inset 0 0 40px rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(34px) saturate(185%) brightness(1.06);
-    -webkit-backdrop-filter: blur(34px) saturate(185%) brightness(1.06);
+      /* 外投影：贴近且柔和，模拟玻璃悬浮而不是发光的球 */
+      0 22px 52px -20px rgba(3, 12, 34, 0.62),
+      0 6px 18px -10px rgba(3, 12, 34, 0.42),
+      /* 内投影四边：上亮下暗、左右极淡，做出玻璃的厚度 */
+      inset 0 1.2px 0 rgba(255, 255, 255, 0.62),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.14),
+      inset 1px 0 0 rgba(255, 255, 255, 0.18),
+      inset -1px 0 0 rgba(255, 255, 255, 0.18),
+      inset 0 0 58px rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(28px) saturate(200%) brightness(1.04);
+    -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.04);
     overflow: hidden;
     isolation: isolate;
     /* opacity 供认证卡片淡出（进入应用界面）与淡入（退出登录）使用 */
     transition: opacity 0.26s linear, box-shadow 0.35s ease;
   }
-  /* 顶部玻璃反光 */
+  /* 边缘镜面光环：光沿玻璃侧壁反射，亮度随圆周变化（左上方最亮）。
+     用 mask 只保留 1px 描边，因此环内完全透明，不遮挡内容。 */
   .card-shell::before {
     content: "";
     position: absolute;
     inset: 0;
-    pointer-events: none;
     z-index: 2;
-    background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.02) 42%, rgba(255,255,255,0) 100%);
+    pointer-events: none;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(from 205deg at 50% 50%,
+      rgba(255, 255, 255, 0.92) 0deg,
+      rgba(255, 255, 255, 0.14) 58deg,
+      rgba(255, 255, 255, 0.40) 124deg,
+      rgba(255, 255, 255, 0.06) 190deg,
+      rgba(255, 255, 255, 0.52) 264deg,
+      rgba(255, 255, 255, 0.10) 322deg,
+      rgba(255, 255, 255, 0.92) 360deg);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
   }
   /* 悬浮流光：一道斜向光带从卡片上掠过 */
   .card-shell::after {
@@ -192,18 +209,21 @@
     opacity: 0;
     background: linear-gradient(to right,
       rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.14) 35%,
-      rgba(255, 255, 255, 0.42) 50%,
-      rgba(255, 255, 255, 0.14) 65%,
+      rgba(255, 255, 255, 0.07) 35%,
+      rgba(255, 255, 255, 0.20) 50%,
+      rgba(255, 255, 255, 0.07) 65%,
       rgba(255, 255, 255, 0) 100%);
     transform: translateX(-220%) skewX(-16deg);
   }
   .card-shell:hover {
     box-shadow:
-      0 22px 60px -12px rgba(4, 16, 42, 0.68),
-      0 4px 16px rgba(4, 16, 42, 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.62),
-      inset 0 0 46px rgba(255, 255, 255, 0.09);
+      0 26px 60px -20px rgba(3, 12, 34, 0.68),
+      0 8px 22px -12px rgba(3, 12, 34, 0.46),
+      inset 0 1.2px 0 rgba(255, 255, 255, 0.70),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.18),
+      inset 1px 0 0 rgba(255, 255, 255, 0.22),
+      inset -1px 0 0 rgba(255, 255, 255, 0.22),
+      inset 0 0 62px rgba(255, 255, 255, 0.08);
   }
   .card-shell:hover::after {
     animation: shine-sweep 1.15s ease-out;
@@ -221,7 +241,7 @@
     inset: 0;
     z-index: 3;
     pointer-events: none;
-    opacity: 0.16;
+    opacity: 0.07; /* 液态玻璃追求干净通透，颗粒只留极淡一层帮助模糊落点 */
     mix-blend-mode: soft-light;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
@@ -233,8 +253,9 @@
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.3s ease;
-    background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%),
-      rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.06) 42%, transparent 70%);
+    /* 跟随光标的柔光：模拟透镜接住光线，范围收小、亮度提高 */
+    background: radial-gradient(210px circle at var(--mx, 50%) var(--my, 0%),
+      rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.07) 44%, transparent 72%);
   }
   .card-shell:hover .glow { opacity: 1; }
 
@@ -274,15 +295,17 @@
     align-items: center;
     gap: 12px;
     background: rgba(255, 255, 255, 0.10);
-    border: 1px solid var(--stroke);
+    border: 1px solid var(--glass-edge);
     border-radius: var(--radius-md);
     padding: 0 16px;
     height: 50px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    backdrop-filter: blur(8px) saturate(170%);
+    -webkit-backdrop-filter: blur(8px) saturate(170%);
     transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   }
   .input-wrap:hover {
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.15);
     border-color: var(--stroke-strong);
   }
   .input-wrap:focus-within {
@@ -567,54 +590,54 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 18px;
+    gap: 14px;
     flex: none;
-    padding: 20px 34px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 14px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
   }
-  .app-brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+  .app-brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
   .app-brand .mark {
-    width: 42px;
-    height: 42px;
+    width: 34px;
+    height: 34px;
     flex: none;
-    border-radius: 12px;
+    border-radius: 11px;
     display: grid;
     place-items: center;
     background: linear-gradient(135deg, #5fcaff, #2a6dff);
     box-shadow:
-      0 8px 20px rgba(42, 109, 255, 0.42),
+      0 6px 16px rgba(42, 109, 255, 0.38),
       inset 0 1px 0 rgba(255, 255, 255, 0.5);
   }
-  .app-brand .mark svg { width: 23px; height: 23px; }
-  .app-brand b { display: block; font-size: 17.5px; font-weight: 600; letter-spacing: 0.3px; }
-  .app-brand .sub { display: block; margin-top: 3px; font-size: 12px; color: var(--text-secondary); }
+  .app-brand .mark svg { width: 19px; height: 19px; }
+  .app-brand b { display: block; font-size: 15.5px; font-weight: 600; letter-spacing: 0.3px; }
+  .app-brand .sub { display: block; margin-top: 2px; font-size: 11px; color: var(--text-secondary); }
 
   .app-user {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     flex: none;
     max-width: 46%;
-    padding: 6px 18px 6px 6px;
+    padding: 4px 15px 4px 4px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.09);
-    border: 1px solid var(--stroke);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid var(--glass-edge);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
   }
   .app-user .mini {
-    width: 31px;
-    height: 31px;
+    width: 26px;
+    height: 26px;
     flex: none;
     border-radius: 50%;
     display: grid;
     place-items: center;
-    font-size: 13.5px;
+    font-size: 12px;
     font-weight: 600;
     color: #fff;
     background: linear-gradient(135deg, #5fcaff, #2a6dff);
   }
   .app-user .name {
-    font-size: 14px;
+    font-size: 13px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -623,20 +646,20 @@
   /* --- 导航：四个功能分页 --- */
   .app-nav {
     display: flex;
-    gap: 4px;
+    gap: 2px;
     flex: none;
-    padding: 12px 28px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    padding: 8px 20px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
   .app-tab {
     position: relative;
     flex: none;
-    padding: 11px 20px 14px;
+    padding: 8px 15px 11px;
     border: none;
-    border-radius: 8px 8px 0 0;
+    border-radius: 10px 10px 0 0;
     background: none;
     font-family: var(--font);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--text-secondary);
     cursor: pointer;
@@ -649,8 +672,8 @@
   .app-tab::after {
     content: "";
     position: absolute;
-    left: 16px;
-    right: 16px;
+    left: 12px;
+    right: 12px;
     bottom: -1px;
     height: 2px;
     border-radius: 2px;
@@ -665,7 +688,7 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 32px 34px 36px;
+    padding: 22px 24px 26px;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
   }
@@ -686,63 +709,68 @@
 
   /* 占位提示：内容待补充的地方统一用它，替换内容时一并删掉 */
   .todo {
-    margin-bottom: 22px;
-    padding: 13px 18px;
+    margin-bottom: 14px;
+    padding: 9px 13px;
     border-radius: var(--radius-sm);
-    font-size: 13px;
-    line-height: 1.7;
+    font-size: 12.5px;
+    line-height: 1.65;
     color: #ffe6bd;
-    background: rgba(255, 190, 92, 0.12);
-    border: 1px dashed rgba(255, 200, 120, 0.44);
+    background: rgba(255, 190, 92, 0.10);
+    border: 1px dashed rgba(255, 200, 120, 0.38);
   }
   .todo b { font-weight: 600; }
 
-  .page-hd { margin-bottom: 22px; }
-  .page-hd h3 { font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
-  .page-hd p { margin-top: 8px; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+  .page-hd { margin-bottom: 15px; }
+  .page-hd h3 { font-size: 19px; font-weight: 600; letter-spacing: 0.2px; }
+  .page-hd p { margin-top: 5px; font-size: 13px; line-height: 1.65; color: var(--text-secondary); }
 
   /* --- 产品介绍 --- */
   .hero {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
     align-items: center;
-    gap: 34px;
-    margin-bottom: 22px;
-    padding: 32px 36px;
-    border-radius: var(--radius-lg);
-    background: linear-gradient(150deg, rgba(95, 202, 255, 0.20), rgba(42, 109, 255, 0.13));
-    border: 1px solid rgba(255, 255, 255, 0.20);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.20);
+    gap: 26px;
+    margin-bottom: 18px;
+    padding: 22px 26px;
+    border-radius: var(--radius-md);
+    /* 子层玻璃：与主卡同一套语言，只是底色更薄、模糊更低 */
+    background: linear-gradient(150deg, rgba(95, 202, 255, 0.16), rgba(42, 109, 255, 0.09));
+    border: 1px solid var(--glass-edge);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.30),
+      0 2px 10px -6px rgba(3, 12, 34, 0.35);
+    backdrop-filter: blur(8px) saturate(170%);
+    -webkit-backdrop-filter: blur(8px) saturate(170%);
   }
-  .hero h4 { font-size: 30px; font-weight: 600; letter-spacing: 0.2px; line-height: 1.3; }
+  .hero h4 { font-size: 25px; font-weight: 600; letter-spacing: 0.2px; line-height: 1.28; }
   .hero .tagline {
     display: inline-block;
-    margin-bottom: 14px;
-    padding: 5px 12px;
+    margin-bottom: 10px;
+    padding: 3px 10px;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
     letter-spacing: 0.4px;
     color: #d8ecff;
-    background: rgba(95, 202, 255, 0.18);
-    border: 1px solid rgba(95, 202, 255, 0.38);
+    background: rgba(95, 202, 255, 0.16);
+    border: 1px solid rgba(95, 202, 255, 0.34);
   }
-  .hero p { margin-top: 12px; font-size: 14.5px; line-height: 1.8; color: rgba(255, 255, 255, 0.84); }
-  .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
-  .hero .cta .btn { width: auto; height: 46px; padding: 0 30px; font-size: 14.5px; }
+  .hero p { margin-top: 9px; font-size: 13.5px; line-height: 1.72; color: rgba(255, 255, 255, 0.84); }
+  .hero .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .hero .cta .btn { width: auto; height: 42px; padding: 0 24px; font-size: 13.5px; }
 
   /* hero 右侧装饰：唱片 + 律动条，纯 CSS，无图片依赖 */
   .hero .visual {
     position: relative;
     justify-self: center;
-    width: 200px;
-    height: 200px;
+    width: 152px;
+    height: 152px;
     display: grid;
     place-items: center;
   }
   .hero .disc {
-    width: 176px;
-    height: 176px;
+    width: 132px;
+    height: 132px;
     border-radius: 50%;
     display: grid;
     place-items: center;
@@ -757,8 +785,8 @@
   }
   .hero .disc::after {
     content: "";
-    width: 58px;
-    height: 58px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: linear-gradient(135deg, #5fcaff, #2a6dff);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
@@ -767,13 +795,13 @@
   .hero .bars {
     position: absolute;
     left: 50%;
-    bottom: -6px;
+    bottom: -5px;
     transform: translateX(-50%);
     display: flex;
     align-items: flex-end;
-    gap: 4px;
-    height: 34px;
-    padding: 0 12px;
+    gap: 3px;
+    height: 27px;
+    padding: 0 10px;
     border-radius: 999px;
     background: rgba(8, 20, 44, 0.42);
     border: 1px solid rgba(255, 255, 255, 0.16);
@@ -799,98 +827,106 @@
   .feat-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
+    gap: 12px;
   }
   .feat {
-    padding: 22px 24px;
+    padding: 15px 16px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--stroke);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid var(--glass-edge);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.30),
+      0 2px 10px -6px rgba(3, 12, 34, 0.35);
+    backdrop-filter: blur(8px) saturate(170%);
+    -webkit-backdrop-filter: blur(8px) saturate(170%);
     transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
   }
   .feat:hover {
-    background: rgba(255, 255, 255, 0.13);
+    background: rgba(255, 255, 255, 0.15);
     border-color: var(--stroke-strong);
     transform: translateY(-2px);
   }
   .feat .ico {
-    width: 42px;
-    height: 42px;
-    margin-bottom: 14px;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 11px;
+    border-radius: 10px;
     display: grid;
     place-items: center;
     background: rgba(255, 255, 255, 0.13);
     border: 1px solid rgba(255, 255, 255, 0.20);
   }
-  .feat .ico svg { width: 22px; height: 22px; }
-  .feat h5 { font-size: 15.5px; font-weight: 600; margin-bottom: 8px; }
-  .feat p { font-size: 13.5px; line-height: 1.75; color: var(--text-secondary); }
+  .feat .ico svg { width: 19px; height: 19px; }
+  .feat h5 { font-size: 14.5px; font-weight: 600; margin-bottom: 6px; }
+  .feat p { font-size: 12.8px; line-height: 1.68; color: var(--text-secondary); }
 
   /* --- 界面预览：截图占位区（换成真图时删除 .shot 的虚线样式与标签） --- */
-  .section-t { margin: 30px 0 16px; }
-  .section-t h3 { font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
-  .section-t p { margin-top: 8px; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+  .section-t { margin: 22px 0 12px; }
+  .section-t h3 { font-size: 18px; font-weight: 600; letter-spacing: 0.2px; }
+  .section-t p { margin-top: 5px; font-size: 13px; line-height: 1.65; color: var(--text-secondary); }
 
   .shots {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
+    gap: 12px;
   }
   .shot {
     display: grid;
     place-items: center;
-    gap: 10px;
+    gap: 7px;
     aspect-ratio: 16 / 10;
-    padding: 18px;
+    padding: 13px;
     text-align: center;
     border-radius: var(--radius-md);
     color: #ffe6bd;
     background: rgba(255, 190, 92, 0.06);
-    border: 1px dashed rgba(255, 200, 120, 0.44);
+    border: 1px dashed rgba(255, 200, 120, 0.38);
   }
-  .shot.wide { grid-column: 1 / -1; aspect-ratio: 21 / 8; }
+  .shot.wide { grid-column: 1 / -1; aspect-ratio: 21 / 6; }
   .shot .cam {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
     display: grid;
     place-items: center;
     background: rgba(255, 190, 92, 0.12);
     border: 1px solid rgba(255, 200, 120, 0.34);
   }
-  .shot .cam svg { width: 20px; height: 20px; }
-  .shot b { display: block; font-size: 14px; font-weight: 600; }
-  .shot span { display: block; margin-top: 4px; font-size: 12.5px; color: rgba(255, 230, 189, 0.72); }
+  .shot .cam svg { width: 17px; height: 17px; }
+  .shot b { display: block; font-size: 13.5px; font-weight: 600; }
+  .shot span { display: block; margin-top: 3px; font-size: 12px; color: rgba(255, 230, 189, 0.72); }
 
   /* --- 下载链接 --- */
   .dl-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
+    gap: 12px;
   }
   .dl-card {
     display: flex;
     flex-direction: column;
-    padding: 22px 24px;
+    padding: 15px 16px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--stroke);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid var(--glass-edge);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.30),
+      0 2px 10px -6px rgba(3, 12, 34, 0.35);
+    backdrop-filter: blur(8px) saturate(170%);
+    -webkit-backdrop-filter: blur(8px) saturate(170%);
   }
-  .dl-card .top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-  .dl-card .top svg { width: 26px; height: 26px; flex: none; }
-  .dl-card .top b { font-size: 16px; font-weight: 600; }
+  .dl-card .top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .dl-card .top svg { width: 22px; height: 22px; flex: none; }
+  .dl-card .top b { font-size: 15px; font-weight: 600; }
   .dl-card .meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 16px;
-    margin-bottom: 18px;
-    font-size: 12.5px;
+    gap: 4px 12px;
+    margin-bottom: 13px;
+    font-size: 12px;
     color: var(--text-secondary);
   }
-  .dl-card .btn { margin-top: auto; height: 44px; font-size: 14.5px; }
+  .dl-card .btn { margin-top: auto; height: 40px; font-size: 13.5px; }
   .dl-card .btn:disabled {
     background: rgba(255, 255, 255, 0.07);
     color: var(--text-secondary);
@@ -899,16 +935,20 @@
 
   /* --- 关于我们 / 个人中心 --- */
   .about-block {
-    margin-bottom: 16px;
-    padding: 22px 24px;
+    margin-bottom: 12px;
+    padding: 16px 17px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--stroke);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid var(--glass-edge);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.30),
+      0 2px 10px -6px rgba(3, 12, 34, 0.35);
+    backdrop-filter: blur(8px) saturate(170%);
+    -webkit-backdrop-filter: blur(8px) saturate(170%);
   }
-  .about-block h5 { font-size: 15.5px; font-weight: 600; margin-bottom: 10px; }
-  .about-block p { font-size: 13.5px; line-height: 1.8; color: var(--text-secondary); }
-  .kv { display: flex; flex-wrap: wrap; gap: 10px 30px; font-size: 13.5px; }
+  .about-block h5 { font-size: 14.5px; font-weight: 600; margin-bottom: 7px; }
+  .about-block p { font-size: 12.8px; line-height: 1.72; color: var(--text-secondary); }
+  .kv { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 12.8px; }
   .kv span { color: var(--text-secondary); }
   .kv b { font-weight: 600; color: var(--text-primary); }
   /* 可点击的联系方式：邮箱用链接色，微信后跟一个小胶囊按钮 */
@@ -929,50 +969,54 @@
   }
   .kv .mini-btn:hover { background: rgba(95, 202, 255, 0.26); border-color: rgba(95, 202, 255, 0.62); }
 
-  .me-head { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
-  .me-head h4 { font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
-  .me-head .mail { margin-top: 7px; font-size: 13.5px; color: var(--text-secondary); word-break: break-all; }
+  .me-head { display: flex; align-items: center; gap: 14px; margin-bottom: 17px; }
+  .me-head h4 { font-size: 19px; font-weight: 600; letter-spacing: 0.2px; }
+  .me-head .mail { margin-top: 5px; font-size: 12.8px; color: var(--text-secondary); word-break: break-all; }
 
   /* 头像：沿用 .logo 的渐变与高光，保持同一套玻璃语言 */
   .home-avatar {
-    width: 68px;
-    height: 68px;
+    width: 56px;
+    height: 56px;
     flex: none;
-    border-radius: 18px;
+    border-radius: 15px;
     display: grid;
     place-items: center;
-    font-size: 26px;
+    font-size: 22px;
     font-weight: 600;
     color: #fff;
     background: linear-gradient(135deg, #5fcaff, #2a6dff);
     box-shadow:
-      0 10px 24px rgba(42, 109, 255, 0.48),
+      0 8px 20px -6px rgba(42, 109, 255, 0.48),
       inset 0 1px 0 rgba(255, 255, 255, 0.55);
   }
 
   .home-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-    margin-bottom: 28px;
+    gap: 12px;
+    margin-bottom: 20px;
   }
   .home-card {
-    padding: 18px 20px;
+    padding: 14px 15px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--stroke);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid var(--glass-edge);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.30),
+      0 2px 10px -6px rgba(3, 12, 34, 0.35);
+    backdrop-filter: blur(8px) saturate(170%);
+    -webkit-backdrop-filter: blur(8px) saturate(170%);
   }
   .home-card .k {
     display: block;
-    font-size: 12.5px;
+    font-size: 12px;
     color: var(--text-secondary);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     letter-spacing: 0.2px;
   }
-  .home-card .v { font-size: 15.5px; font-weight: 600; }
+  .home-card .v { font-size: 14.5px; font-weight: 600; }
   .home-card .v.ok { color: #7cf0b4; }
-  .btn.ghost.wide { width: auto; min-width: 160px; padding: 0 26px; }
+  .btn.ghost.wide { width: auto; min-width: 148px; padding: 0 22px; }
 
   /* 次要按钮：退出登录等，不用主色以免与主操作抢视觉 */
   .btn.ghost {
@@ -993,33 +1037,33 @@
 
   /* 中窄屏：hero 由左右分栏改为上下堆叠，避免右侧装饰被挤扁 */
   @media (max-width: 760px) {
-    .hero { grid-template-columns: 1fr; gap: 26px; padding: 26px 24px; }
-    .app-body { padding: 26px 24px 30px; }
+    .hero { grid-template-columns: 1fr; gap: 20px; padding: 20px 20px; }
+    .app-body { padding: 20px 20px 24px; }
   }
 
   /* 窄屏：导航横向滚动、用户胶囊只留头像 */
   @media (max-width: 620px) {
-    .app-bar { padding: 15px 16px; }
-    .app-brand .mark { width: 36px; height: 36px; border-radius: 10px; }
-    .app-brand .mark svg { width: 20px; height: 20px; }
-    .app-brand b { font-size: 15.5px; }
-    .app-nav { padding: 10px 12px 0; overflow-x: auto; scrollbar-width: none; }
+    .app-bar { padding: 12px 16px; }
+    .app-brand .mark { width: 32px; height: 32px; border-radius: 10px; }
+    .app-brand .mark svg { width: 19px; height: 19px; }
+    .app-brand b { font-size: 15px; }
+    .app-nav { padding: 7px 12px 0; overflow-x: auto; scrollbar-width: none; }
     .app-nav::-webkit-scrollbar { display: none; }
-    .app-tab { padding: 9px 13px 12px; font-size: 13.5px; }
+    .app-tab { padding: 8px 13px 10px; font-size: 13.5px; }
     .app-tab::after { left: 11px; right: 11px; }
-    .app-body { padding: 20px 16px 24px; }
-    .app-user { padding: 5px; }
+    .app-body { padding: 18px 16px 22px; }
+    .app-user { padding: 4px; }
     .app-user .name { display: none; }
-    .page-hd h3, .section-t h3 { font-size: 19px; }
-    .page-hd p, .section-t p { font-size: 13px; }
-    .hero { padding: 22px 18px; }
-    .hero h4 { font-size: 22px; }
-    .hero p { font-size: 13.5px; }
-    .hero .cta { margin-top: 18px; }
-    .hero .cta .btn { height: 42px; padding: 0 20px; font-size: 13.5px; }
-    .hero .visual { width: 160px; height: 160px; }
-    .hero .disc { width: 140px; height: 140px; }
-    .hero .disc::after { width: 46px; height: 46px; }
+    .page-hd h3, .section-t h3 { font-size: 17px; }
+    .page-hd p, .section-t p { font-size: 12.5px; }
+    .hero { padding: 17px 16px; }
+    .hero h4 { font-size: 20px; }
+    .hero p { font-size: 13px; }
+    .hero .cta { margin-top: 14px; }
+    .hero .cta .btn { height: 40px; padding: 0 18px; font-size: 13px; }
+    .hero .visual { width: 138px; height: 138px; }
+    .hero .disc { width: 120px; height: 120px; }
+    .hero .disc::after { width: 40px; height: 40px; }
     .feat-grid, .dl-grid, .shots, .home-grid { grid-template-columns: 1fr; }
     .shot.wide { aspect-ratio: 16 / 10; }
   }
