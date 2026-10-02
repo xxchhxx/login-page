@@ -260,7 +260,10 @@ app.use((_req, res, next) => {
     res.status(500).json({
       ok: false,
       message:
-        dbConfigError || '数据库连接失败，请检查 TURSO_DATABASE_URL / TURSO_AUTH_TOKEN 配置'
+        dbConfigError || '数据库连接失败，请检查 TURSO_DATABASE_URL / TURSO_AUTH_TOKEN 配置',
+      // 临时诊断：detail 是底层错误；tokenLength 用来判断函数读到的是新值还是旧值。定位完删除
+      detail: err.message,
+      tokenLength: String(ENV.TURSO_AUTH_TOKEN || '').length
     });
   });
 });
