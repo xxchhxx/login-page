@@ -40,7 +40,7 @@
     --text-primary: #14181d;
     --text-secondary: #5b6472;
     --text-muted: #8a93a1;
-    --link: #0067c0;
+    --link: var(--accent-press);
 
     /* 描边与分隔 */
     --border: #d5dae1;
@@ -81,13 +81,13 @@
     --font: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
-  /* ===== 深色模式：跟随系统设置 ===== */
+  /* ===== 深色模式：默认跟随系统；界面设置里可手动固定深/浅色 ===== */
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --accent: #2b9bf4;
       --accent-hover: #57b3f8;
       --accent-press: #1a86dc;
-      --accent-soft: #12293d;
+      --accent-soft: var(--accent-soft-dark, #12293d);
       --on-accent: #06131f;
       --icon-bg: #1173cf;
 
@@ -103,7 +103,7 @@
       --text-primary: #f2f4f7;
       --text-secondary: #a9b2bd;
       --text-muted: #79838f;
-      --link: #6cb8ff;
+      --link: var(--accent-hover);
 
       --border: #363c44;
       --border-strong: #4c545e;
@@ -123,6 +123,98 @@
       --warn-soft: #33291a;
       --warn-border: #5e4a22;
     }
+  }
+
+  /* 手动固定深色：变量与上面的系统深色保持一致（修改时两处需同步） */
+  :root[data-theme="dark"] {
+    --accent: #2b9bf4;
+    --accent-hover: #57b3f8;
+    --accent-press: #1a86dc;
+    --accent-soft: var(--accent-soft-dark, #12293d);
+    --on-accent: #06131f;
+    --icon-bg: #1173cf;
+
+    --accent-2: #3ed0e8;
+    --on-accent-2: #04171d;
+
+    --bg: #0e1013;
+    --surface: #1b1e23;
+    --surface-2: #23272d;
+    --surface-3: #2c3138;
+    --surface-sunken: #15181c;
+
+    --text-primary: #f2f4f7;
+    --text-secondary: #a9b2bd;
+    --text-muted: #79838f;
+    --link: var(--accent-hover);
+
+    --border: #363c44;
+    --border-strong: #4c545e;
+    --divider: #2a2f36;
+
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.45);
+    --shadow-2: 0 12px 32px -12px rgba(0, 0, 0, 0.75), 0 2px 8px rgba(0, 0, 0, 0.55);
+    --scrim: rgba(0, 0, 0, 0.70);
+
+    --danger: #ff8a8d;
+    --danger-soft: #3a1d1f;
+    --danger-border: #6b3235;
+    --success: #74dd8c;
+    --success-soft: #16301b;
+    --success-border: #2f5a38;
+    --warn: #ffd47a;
+    --warn-soft: #33291a;
+    --warn-border: #5e4a22;
+  }
+
+  /* ===== 主题色预设：界面设置里切换，覆盖蓝色系变量 ===== */
+  :root[data-accent="cyan"] {
+    --accent: #0891b2;
+    --accent-hover: #22b8d4;
+    --accent-press: #0e7490;
+    --accent-soft: #e0f5fa;
+    --accent-soft-dark: #0b2e36;
+    --on-accent: #ffffff;
+    --icon-bg: #0891b2;
+    --brand-grad: linear-gradient(135deg, #67e8f9, #0891b2);
+  }
+  :root[data-accent="purple"] {
+    --accent: #7c5cff;
+    --accent-hover: #977dff;
+    --accent-press: #6244e8;
+    --accent-soft: #efeaff;
+    --accent-soft-dark: #241d46;
+    --on-accent: #ffffff;
+    --icon-bg: #7c5cff;
+    --brand-grad: linear-gradient(135deg, #c4b5fd, #7c5cff);
+  }
+  :root[data-accent="green"] {
+    --accent: #0e9f6e;
+    --accent-hover: #2fbf8f;
+    --accent-press: #0b7c55;
+    --accent-soft: #e2f6ee;
+    --accent-soft-dark: #0c2e22;
+    --on-accent: #ffffff;
+    --icon-bg: #0e9f6e;
+    --brand-grad: linear-gradient(135deg, #6ee7b7, #0e9f6e);
+  }
+  :root[data-accent="rose"] {
+    --accent: #e11d74;
+    --accent-hover: #f1478f;
+    --accent-press: #b8135c;
+    --accent-soft: #fde7f1;
+    --accent-soft-dark: #3c1226;
+    --on-accent: #ffffff;
+    --icon-bg: #e11d74;
+    --brand-grad: linear-gradient(135deg, #fda4cf, #e11d74);
+  }
+
+  /* 动画效果关闭（界面设置）：所有过渡与动画即时完成 */
+  :root[data-motion="off"] *,
+  :root[data-motion="off"] *::before,
+  :root[data-motion="off"] *::after {
+    animation: none !important;
+    transition: none !important;
   }
 
   html { height: 100%; }
@@ -1028,6 +1120,185 @@
   }
   .about-block h5 { font-size: 15.5px; font-weight: 600; margin-bottom: 10px; }
   .about-block p { font-size: 13.5px; line-height: 1.8; color: var(--text-secondary); }
+
+  /* --- 更新日志：百叶窗（手风琴）形式，点击版本头展开/收起 --- */
+  .changelog { --cl-hover: rgba(15, 23, 42, 0.05); display: flex; flex-direction: column; gap: 10px; }
+  @media (prefers-color-scheme: dark) {
+    .changelog { --cl-hover: rgba(255, 255, 255, 0.05); }
+  }
+  .cl-item {
+    border-radius: var(--radius-sm, 10px);
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .cl-hd {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 16px;
+    border: none;
+    background: none;
+    font-family: var(--font);
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.18s ease;
+  }
+  .cl-hd:hover { background: var(--cl-hover); }
+  .cl-hd:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .cl-hd b { font-size: 14px; font-weight: 600; letter-spacing: 0.2px; }
+  .cl-hd time { font-size: 12px; color: var(--text-muted); }
+  .cl-tag {
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .cl-arrow {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    margin-left: auto;
+    color: var(--text-muted);
+    transition: transform 0.3s var(--ease-inout);
+  }
+  .cl-item.open .cl-arrow { transform: rotate(180deg); }
+  /* 展开动画：grid 0fr→1fr 过渡高度，内容随 opacity 淡入 */
+  .cl-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s var(--ease-inout);
+  }
+  .cl-item.open .cl-body { grid-template-rows: 1fr; }
+  .cl-inner { overflow: hidden; min-height: 0; }
+  .cl-item ul {
+    margin: 0;
+    padding: 2px 18px 14px 34px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.25s ease, transform 0.25s var(--ease-inout);
+  }
+  .cl-item.open ul { opacity: 1; transform: none; }
+  .cl-item li { font-size: 12.5px; line-height: 1.7; color: var(--text-secondary); }
+  .cl-item li b { font-weight: 600; color: var(--text-primary); }
+
+  /* --- 界面设置：主题色 / 外观模式 / 动画 / 公告 --- */
+  .prefs { display: flex; flex-direction: column; }
+  .pref-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 0;
+  }
+  .pref-row + .pref-row { border-top: 1px solid var(--divider); }
+  .pref-info { min-width: 0; }
+  .pref-info b { display: block; font-size: 13.5px; font-weight: 600; }
+  .pref-info span { display: block; margin-top: 3px; font-size: 12px; color: var(--text-muted); }
+
+  /* 主题色圆点：选中项带主题色描边环 */
+  .swatches { display: flex; gap: 10px; flex: none; }
+  .swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: var(--sw);
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+    transition: transform 0.18s var(--ease-inout), box-shadow 0.18s ease;
+  }
+  .swatch:hover { transform: scale(1.12); }
+  .swatch.on {
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  }
+  .swatch:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+
+  /* 外观模式分段选择 */
+  .seg {
+    display: flex;
+    flex: none;
+    padding: 3px;
+    border-radius: 9px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+  }
+  .seg button {
+    padding: 6px 13px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  }
+  .seg button:hover { color: var(--text-primary); }
+  .seg button.on {
+    color: var(--text-primary);
+    font-weight: 600;
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+  }
+  .seg button:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent); }
+
+  /* 动画开关：iOS 风格 */
+  .switch {
+    position: relative;
+    width: 44px;
+    height: 25px;
+    flex: none;
+    border-radius: 999px;
+    border: none;
+    background: var(--border-strong);
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .switch .knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 19px;
+    height: 19px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: var(--shadow-1);
+    transition: transform 0.2s var(--ease-inout);
+  }
+  .switch.on { background: var(--accent); }
+  .switch.on .knob { transform: translateX(19px); }
+  .switch:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  /* 次级操作按钮（查看公告） */
+  .pref-btn {
+    flex: none;
+    padding: 7px 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface-2);
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease;
+  }
+  .pref-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .pref-btn:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent); }
+
+  /* 窄屏：设置行改为上下堆叠 */
+  @media (max-width: 620px) {
+    .pref-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+  }
   .kv { display: flex; flex-wrap: wrap; gap: 10px 30px; font-size: 13.5px; }
   .kv span { color: var(--text-secondary); }
   .kv b { font-weight: 600; color: var(--text-primary); }
@@ -1827,6 +2098,68 @@
           </div>
 
           <div class="about-block">
+            <h5>更新日志</h5>
+            <div class="changelog">
+              <div class="cl-item open">
+                <button class="cl-hd" type="button" aria-expanded="true">
+                  <b>v1.4.0</b><span class="cl-tag">最新</span><time>2026-10-02</time>
+                  <svg class="cl-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="cl-body"><div class="cl-inner">
+                  <ul>
+                    <li><b>主界面重构</b>：登录后界面改为「侧边栏导航 + 动态页眉」布局，各页面标题与功能一目了然，切换更直观。</li>
+                    <li><b>移动端修复</b>：解决窄屏下内容溢出卡片、导航被裁切、底部被遮挡三类显示问题，手机端可正常浏览与滚动。</li>
+                    <li><b>排版优化</b>：统一间距与对齐规范，宽屏下内容限宽居中，视觉层级更清晰、阅读更舒适。</li>
+                  </ul>
+                </div></div>
+              </div>
+
+              <div class="cl-item">
+                <button class="cl-hd" type="button" aria-expanded="false">
+                  <b>v1.3.0</b><time>2026-10-02</time>
+                  <svg class="cl-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="cl-body"><div class="cl-inner">
+                  <ul>
+                    <li><b>视觉改版</b>：移除毛玻璃与半透明效果，界面全面改为纯色背景，层次更分明。</li>
+                    <li><b>主题切换</b>：深浅色主题跟随系统设置自动切换，两种模式下均保持清晰对比。</li>
+                    <li><b>设计规范</b>：统一卡片、按钮与表单的描边和阴影样式。</li>
+                    <li><b>版本公告</b>：登录后自动弹出更新说明，可勾选「可不再提示」。</li>
+                  </ul>
+                </div></div>
+              </div>
+
+              <div class="cl-item">
+                <button class="cl-hd" type="button" aria-expanded="false">
+                  <b>v1.2.0</b><time>2026-09-28</time>
+                  <svg class="cl-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="cl-body"><div class="cl-inner">
+                  <ul>
+                    <li><b>登录保护</b>：新增异常登录提示，账号异常活动及时知晓。</li>
+                    <li><b>设备管理</b>：新增登录设备列表，支持查看与管理已登录设备。</li>
+                    <li><b>注册优化</b>：简化注册流程，并修复部分设备上密码可见性切换异常的问题。</li>
+                  </ul>
+                </div></div>
+              </div>
+
+              <div class="cl-item">
+                <button class="cl-hd" type="button" aria-expanded="false">
+                  <b>v1.0.0</b><time>2026-09-12</time>
+                  <svg class="cl-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="cl-body"><div class="cl-inner">
+                  <ul>
+                    <li><b>首次发布</b>：本地曲库扫描与播放核心功能上线。</li>
+                    <li><b>账号系统</b>：支持邮箱注册、登录与会话保持。</li>
+                    <li><b>云同步</b>：收藏、播放列表与播放进度多设备同步，音乐文件始终保存在本地。</li>
+                  </ul>
+                </div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="about-block">
             <h5>版本信息</h5>
             <div class="kv">
               <span>最新版本 <b>v1.4.0</b></span>
@@ -1862,6 +2195,59 @@
             <div class="home-card">
               <span class="k">登录有效期</span>
               <span class="v" id="me-expire">—</span>
+            </div>
+          </div>
+
+          <div class="about-block">
+            <h5>界面设置</h5>
+            <div class="prefs">
+              <!-- 主题色 -->
+              <div class="pref-row">
+                <div class="pref-info">
+                  <b>主题色</b>
+                  <span>强调色应用于按钮、导航与链接</span>
+                </div>
+                <div class="swatches" role="radiogroup" aria-label="主题色">
+                  <button class="swatch on" type="button" data-accent="blue"  style="--sw:#0078D4" aria-label="蓝色" title="蓝色"></button>
+                  <button class="swatch" type="button" data-accent="cyan"   style="--sw:#0891b2" aria-label="青色" title="青色"></button>
+                  <button class="swatch" type="button" data-accent="purple" style="--sw:#7c5cff" aria-label="紫色" title="紫色"></button>
+                  <button class="swatch" type="button" data-accent="green"  style="--sw:#0e9f6e" aria-label="绿色" title="绿色"></button>
+                  <button class="swatch" type="button" data-accent="rose"   style="--sw:#e11d74" aria-label="玫红" title="玫红"></button>
+                </div>
+              </div>
+
+              <!-- 外观模式 -->
+              <div class="pref-row">
+                <div class="pref-info">
+                  <b>外观模式</b>
+                  <span>深浅色可固定，或跟随系统自动切换</span>
+                </div>
+                <div class="seg" role="radiogroup" aria-label="外观模式">
+                  <button type="button" data-theme-opt="system" class="on">跟随系统</button>
+                  <button type="button" data-theme-opt="light">浅色</button>
+                  <button type="button" data-theme-opt="dark">深色</button>
+                </div>
+              </div>
+
+              <!-- 动画效果 -->
+              <div class="pref-row">
+                <div class="pref-info">
+                  <b>动画效果</b>
+                  <span>关闭后界面过渡与入场动画将即时完成</span>
+                </div>
+                <button class="switch on" type="button" id="pref-motion" role="switch" aria-checked="true" aria-label="动画效果">
+                  <span class="knob"></span>
+                </button>
+              </div>
+
+              <!-- 版本公告 -->
+              <div class="pref-row">
+                <div class="pref-info">
+                  <b>版本公告</b>
+                  <span>重新查看 v1.4.0 的更新说明</span>
+                </div>
+                <button class="pref-btn" type="button" id="pref-notice">查看公告</button>
+              </div>
             </div>
           </div>
 
@@ -2327,6 +2713,92 @@
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && noticeModal.classList.contains('open')) closeNotice();
+  });
+
+  // 更新日志百叶窗：点击版本头展开/收起，同时只展开一项（可全部收起）
+  document.querySelector('.changelog').addEventListener('click', (e) => {
+    const hd = e.target.closest('.cl-hd');
+    if (!hd) return;
+    const item = hd.parentElement;
+    const willOpen = !item.classList.contains('open');
+    document.querySelectorAll('.changelog .cl-item.open').forEach((it) => {
+      it.classList.remove('open');
+      it.querySelector('.cl-hd').setAttribute('aria-expanded', 'false');
+    });
+    if (willOpen) {
+      item.classList.add('open');
+      hd.setAttribute('aria-expanded', 'true');
+    }
+  });
+
+  // ===== 界面设置：主题色 / 外观模式 / 动画效果，偏好存 localStorage =====
+  const PREFS_KEY = 'ch-music-prefs';
+  function loadPrefs() {
+    try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; }
+    catch { return {}; }
+  }
+  function savePrefs(p) {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+  }
+  // 把偏好写到 <html> 的 data 属性上，CSS 变量级联生效
+  function applyPrefs(p) {
+    const html = document.documentElement;
+    if (p.accent && p.accent !== 'blue') html.dataset.accent = p.accent;
+    else delete html.dataset.accent;
+    if (p.theme === 'light' || p.theme === 'dark') html.dataset.theme = p.theme;
+    else html.removeAttribute('data-theme'); // 跟随系统
+    if (p.motion === 'off') html.dataset.motion = 'off';
+    else delete html.dataset.motion;
+  }
+  // 控件状态与偏好同步
+  function syncPrefControls(p) {
+    document.querySelectorAll('.swatch').forEach((s) => {
+      s.classList.toggle('on', (p.accent || 'blue') === s.dataset.accent);
+    });
+    document.querySelectorAll('.seg [data-theme-opt]').forEach((b) => {
+      b.classList.toggle('on', (p.theme || 'system') === b.dataset.themeOpt);
+    });
+    const sw = document.getElementById('pref-motion');
+    sw.classList.toggle('on', p.motion !== 'off');
+    sw.setAttribute('aria-checked', p.motion !== 'off' ? 'true' : 'false');
+  }
+
+  let prefs = loadPrefs();
+  applyPrefs(prefs);
+  syncPrefControls(prefs);
+
+  // 主题色圆点
+  document.querySelector('.swatches').addEventListener('click', (e) => {
+    const s = e.target.closest('.swatch');
+    if (!s) return;
+    prefs.accent = s.dataset.accent;
+    applyPrefs(prefs);
+    savePrefs(prefs);
+    syncPrefControls(prefs);
+  });
+
+  // 外观模式分段（.prefs 限定：登录/注册切换也用了 .seg 类名）
+  document.querySelector('.prefs .seg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-theme-opt]');
+    if (!b) return;
+    prefs.theme = b.dataset.themeOpt;
+    applyPrefs(prefs);
+    savePrefs(prefs);
+    syncPrefControls(prefs);
+  });
+
+  // 动画开关
+  document.getElementById('pref-motion').addEventListener('click', () => {
+    prefs.motion = prefs.motion === 'off' ? 'on' : 'off';
+    applyPrefs(prefs);
+    savePrefs(prefs);
+    syncPrefControls(prefs);
+  });
+
+  // 重新查看版本公告
+  document.getElementById('pref-notice').addEventListener('click', () => {
+    localStorage.removeItem(NOTICE_KEY);
+    showNotice();
   });
 
   // 进入应用界面：登录 / 注册 / 刷新恢复 三条路径共用
