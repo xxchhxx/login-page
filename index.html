@@ -911,6 +911,23 @@
   .kv { display: flex; flex-wrap: wrap; gap: 10px 30px; font-size: 13.5px; }
   .kv span { color: var(--text-secondary); }
   .kv b { font-weight: 600; color: var(--text-primary); }
+  /* 可点击的联系方式：邮箱用链接色，微信后跟一个小胶囊按钮 */
+  .kv a { color: #8fd0ff; font-weight: 600; text-decoration: none; }
+  .kv a:hover { text-decoration: underline; }
+  .kv .mini-btn {
+    margin-left: 8px;
+    padding: 3px 11px;
+    border: 1px solid rgba(95, 202, 255, 0.40);
+    border-radius: 999px;
+    background: rgba(95, 202, 255, 0.14);
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    color: #d8ecff;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease;
+  }
+  .kv .mini-btn:hover { background: rgba(95, 202, 255, 0.26); border-color: rgba(95, 202, 255, 0.62); }
 
   .me-head { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
   .me-head h4 { font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
@@ -1471,7 +1488,10 @@
           <div class="about-block">
             <h5>联系我们</h5>
             <div class="kv">
-              <span>邮箱 <b>xxchhxx@163.com</b></span>
+              <span>邮箱 <a href="mailto:a13828563360@163.com">a13828563360@163.com</a></span>
+              <span>微信 <b id="wx-id">chh-shanyu-520</b>
+                <button class="mini-btn" type="button" id="btn-wx">复制并打开微信</button>
+              </span>
               <span>问题反馈 <b>GitHub Issues</b></span>
               <span>响应时间 <b>1–2 个工作日</b></span>
             </div>
@@ -1882,6 +1902,29 @@
       // 等应用卡片淡出后再切回登录面板，避免两层内容同时可见
       setTimeout(() => switchPanel('login'), APP_FADE_MS);
     });
+  });
+
+  // 关于我们：复制微信号并尝试唤起微信；未安装微信时只完成复制，不会跳到错误页
+  document.getElementById('btn-wx').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const wxId = document.getElementById('wx-id').textContent.trim();
+
+    try {
+      await navigator.clipboard.writeText(wxId);
+    } catch {
+      // 非安全上下文或未授权时剪贴板不可用，跳过即可，不影响唤起微信
+    }
+
+    const label = btn.textContent;
+    btn.textContent = '微信号已复制';
+    setTimeout(() => { btn.textContent = label; }, 2000);
+
+    const a = document.createElement('a');
+    a.href = 'weixin://';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   });
 
   // 回车键直接提交所在面板
