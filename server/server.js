@@ -4,9 +4,11 @@
  * 邮箱注册 / 登录后端服务
  *   - 注册需要邮箱验证码（通过 SMTP 真实发信）
  *   - 密码使用 scrypt 加盐哈希存储，不保存明文
- *   - 数据存放于 server/data/app.db（使用 Node 内置 node:sqlite，无需额外依赖）
+ *   - 数据层：本地开发用 SQLite 文件（server/data/app.db）；
+ *     配置了 TURSO_DATABASE_URL 后自动切到 Turso 云数据库（Vercel 等无持久磁盘的环境用这个）
  *
- * 启动： node server.js
+ * 本机启动： node server.js
+ * 云端部署： 由 api/index.js 导出为 Vercel 函数
  */
 
 const path = require('node:path');
@@ -14,7 +16,7 @@ const fs = require('node:fs');
 const crypto = require('node:crypto');
 const express = require('express');
 const nodemailer = require('nodemailer');
-const { DatabaseSync } = require('node:sqlite');
+const { createClient } = require('@libsql/client');
 
 /* ============================ 配置 ============================ */
 
@@ -60,61 +62,65 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /* ============================ 数据库 ============================ */
 
-// 数据库存放位置：默认 server/data；云端挂载持久卷后用 DATA_DIR 指向挂载点（如 /data），
-// 这样容器重启/重新部署后用户数据不会丢。
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-fs.mkdirSync(DATA_DIR, { recursive: true });
-const db = new DatabaseSync(path.join(DATA_DIR, 'app.db'));
+const TURSO_URL = ENV.TURSO_DATABASE_URL || '';
+const useTurso = Boolean(TURSO_URL);
 
-db.exec(`
-  PRAGMA journal_mode = WAL;
+let dbUrl;
+if (useTurso) {
+  dbUrl = TURSO_URL;
+} else {
+  const DATA_DIR = ENV.DATA_DIR || path.join(__dirname, 'data');
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  dbUrl = 'file:' + path.join(DATA_DIR, 'app.db').split(path.sep).join('/');
+}
 
-  CREATE TABLE IF NOT EXISTS users (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    username   TEXT    NOT NULL,
-    email      TEXT    NOT NULL UNIQUE,
-    pwd_salt   TEXT    NOT NULL,
-    pwd_hash   TEXT    NOT NULL,
-    created_at INTEGER NOT NULL
-  );
+const client = createClient({ url: dbUrl, authToken: ENV.TURSO_AUTH_TOKEN || undefined });
 
-  CREATE TABLE IF NOT EXISTS email_codes (
-    email      TEXT    PRIMARY KEY,
-    code_hash  TEXT    NOT NULL,
-    expires_at INTEGER NOT NULL,
-    sent_at    INTEGER NOT NULL,
-    attempts   INTEGER NOT NULL DEFAULT 0
-  );
+const SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS users (' +
+    'id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, email TEXT NOT NULL UNIQUE, ' +
+    'pwd_salt TEXT NOT NULL, pwd_hash TEXT NOT NULL, created_at INTEGER NOT NULL)',
+  'CREATE TABLE IF NOT EXISTS email_codes (' +
+    'email TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, ' +
+    'sent_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0)',
+  'CREATE TABLE IF NOT EXISTS sessions (' +
+    'token TEXT PRIMARY KEY, user_id INTEGER NOT NULL, created_at INTEGER NOT NULL, ' +
+    'expires_at INTEGER NOT NULL)'
+];
 
-  CREATE TABLE IF NOT EXISTS sessions (
-    token      TEXT    PRIMARY KEY,
-    user_id    INTEGER NOT NULL,
-    created_at INTEGER NOT NULL,
-    expires_at INTEGER NOT NULL
-  );
-`);
+// 建表只在服务初始化时执行一次；所有接口都会先等它完成
+const dbReady = (async () => {
+  if (!useTurso) {
+    try {
+      await client.execute('PRAGMA journal_mode = WAL');
+    } catch (err) {
+      // 本地文件库偶尔不支持 WAL，忽略即可
+    }
+  }
+  await client.batch(SCHEMA);
+})();
 
-const q = {
-  userByEmail: db.prepare('SELECT * FROM users WHERE email = ?'),
-  insertUser: db.prepare(
-    'INSERT INTO users (username, email, pwd_salt, pwd_hash, created_at) VALUES (?, ?, ?, ?, ?)'
-  ),
-  codeByEmail: db.prepare('SELECT * FROM email_codes WHERE email = ?'),
-  upsertCode: db.prepare(`
-    INSERT INTO email_codes (email, code_hash, expires_at, sent_at, attempts)
-    VALUES (?, ?, ?, ?, 0)
-    ON CONFLICT(email) DO UPDATE SET
-      code_hash  = excluded.code_hash,
-      expires_at = excluded.expires_at,
-      sent_at    = excluded.sent_at,
-      attempts   = 0
-  `),
-  bumpAttempts: db.prepare('UPDATE email_codes SET attempts = attempts + 1 WHERE email = ?'),
-  deleteCode: db.prepare('DELETE FROM email_codes WHERE email = ?'),
-  purgeCodes: db.prepare('DELETE FROM email_codes WHERE expires_at < ?'),
-  insertSession: db.prepare(
+const run = (sql, args = []) => client.execute({ sql, args });
+
+async function one(sql, args = []) {
+  const rs = await run(sql, args);
+  return rs.rows[0] || null;
+}
+
+const SQL = {
+  userByEmail: 'SELECT * FROM users WHERE email = ?',
+  insertUser:
+    'INSERT INTO users (username, email, pwd_salt, pwd_hash, created_at) VALUES (?, ?, ?, ?, ?)',
+  codeByEmail: 'SELECT * FROM email_codes WHERE email = ?',
+  upsertCode:
+    'INSERT INTO email_codes (email, code_hash, expires_at, sent_at, attempts) VALUES (?, ?, ?, ?, 0) ' +
+    'ON CONFLICT(email) DO UPDATE SET code_hash = excluded.code_hash, ' +
+    'expires_at = excluded.expires_at, sent_at = excluded.sent_at, attempts = 0',
+  bumpAttempts: 'UPDATE email_codes SET attempts = attempts + 1 WHERE email = ?',
+  deleteCode: 'DELETE FROM email_codes WHERE email = ?',
+  purgeCodes: 'DELETE FROM email_codes WHERE expires_at < ?',
+  insertSession:
     'INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)'
-  )
 };
 
 /* ============================ 工具函数 ============================ */
@@ -135,7 +141,7 @@ function verifyPassword(password, salt, expectedHex) {
 }
 
 const hashCode = (email, code) =>
-  crypto.createHash('sha256').update(`${email}:${code}`).digest('hex');
+  crypto.createHash('sha256').update(email + ':' + code).digest('hex');
 
 const newToken = () => crypto.randomBytes(32).toString('hex');
 
@@ -176,29 +182,31 @@ function mailer() {
 }
 
 function mailHtml(code) {
-  return `
-  <div style="font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:#f2f5fa;padding:32px">
-    <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;
-                box-shadow:0 8px 28px rgba(20,50,110,.12)">
-      <div style="background:linear-gradient(135deg,#2a6dff,#5fcaff);padding:24px 28px;color:#fff">
-        <div style="font-size:18px;font-weight:600">邮箱验证码</div>
-      </div>
-      <div style="padding:28px">
-        <p style="margin:0 0 18px;color:#33415c;font-size:14px">你正在注册账号，请在页面中填入以下验证码完成验证：</p>
-        <div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#0078D4;
-                    background:#eef5ff;border-radius:10px;padding:16px;text-align:center">${code}</div>
-        <p style="margin:18px 0 0;color:#7b879e;font-size:12.5px">
-          验证码 10 分钟内有效。若非本人操作，请忽略本邮件。
-        </p>
-      </div>
-    </div>
-  </div>`;
+  const font = "'Segoe UI','Microsoft YaHei',sans-serif";
+  return (
+    '<div style="font-family:' + font + ';background:#f2f5fa;padding:32px">' +
+    '<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;' +
+    'box-shadow:0 8px 28px rgba(20,50,110,.12)">' +
+    '<div style="background:linear-gradient(135deg,#2a6dff,#5fcaff);padding:24px 28px;color:#fff">' +
+    '<div style="font-size:18px;font-weight:600">邮箱验证码</div>' +
+    '</div>' +
+    '<div style="padding:28px">' +
+    '<p style="margin:0 0 18px;color:#33415c;font-size:14px">' +
+    '你正在注册账号，请在页面中填入以下验证码完成验证：</p>' +
+    '<div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#0078D4;' +
+    'background:#eef5ff;border-radius:10px;padding:16px;text-align:center">' + code + '</div>' +
+    '<p style="margin:18px 0 0;color:#7b879e;font-size:12.5px">' +
+    '验证码 10 分钟内有效。若非本人操作，请忽略本邮件。</p>' +
+    '</div></div></div>'
+  );
 }
 
 /* ============================ HTTP 服务 ============================ */
 
 const app = express();
 app.disable('x-powered-by');
+// 部署在 Vercel / 反向代理后，用 X-Forwarded-For 的第一跳作为客户端 IP
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '16kb' }));
 
 /* ---------------- 跨域：允许 GitHub Pages 等外部站点调用接口 ---------------- */
@@ -227,6 +235,18 @@ app.use((req, res, next) => {
   next();
 });
 
+/* ---------------- 数据库就绪检查 ---------------- */
+
+app.use((_req, res, next) => {
+  dbReady.then(() => next()).catch((err) => {
+    console.error('[数据库不可用]', err.message);
+    res.status(500).json({
+      ok: false,
+      message: '数据库连接失败，请检查 TURSO_DATABASE_URL / TURSO_AUTH_TOKEN 配置'
+    });
+  });
+});
+
 /** 统一的失败返回 */
 const fail = (res, status, message) => res.status(status).json({ ok: false, message });
 
@@ -245,14 +265,15 @@ app.post('/api/send-code', async (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
 
   if (!EMAIL_RE.test(email)) return fail(res, 400, '请输入有效的邮箱地址');
-  if (q.userByEmail.get(email)) return fail(res, 409, '该邮箱已注册，请直接登录');
+  if (await one(SQL.userByEmail, [email])) return fail(res, 409, '该邮箱已注册，请直接登录');
   if (ipRateLimited(req.ip)) return fail(res, 429, '操作过于频繁，请稍后再试');
 
   const now = Date.now();
-  const existing = q.codeByEmail.get(email);
-  if (existing && now - existing.sent_at < CODE_RESEND_MS) {
-    const wait = Math.ceil((CODE_RESEND_MS - (now - existing.sent_at)) / 1000);
-    return fail(res, 429, `请求过于频繁，请 ${wait} 秒后再试`);
+  const existing = await one(SQL.codeByEmail, [email]);
+  const lastSent = existing ? Number(existing.sent_at) : 0;
+  if (existing && now - lastSent < CODE_RESEND_MS) {
+    const wait = Math.ceil((CODE_RESEND_MS - (now - lastSent)) / 1000);
+    return fail(res, 429, '请求过于频繁，请 ' + wait + ' 秒后再试');
   }
 
   const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
@@ -271,11 +292,11 @@ app.post('/api/send-code', async (req, res) => {
       return fail(res, 502, '验证码发送失败，请检查 SMTP 配置后重试');
     }
   } else {
-    console.warn(`[开发模式] SMTP 未配置，${email} 的验证码为：${code}（10 分钟内有效）`);
+    console.warn('[开发模式] SMTP 未配置，' + email + ' 的验证码为：' + code + '（10 分钟内有效）');
   }
 
-  q.purgeCodes.run(now); // 顺手清理过期验证码
-  q.upsertCode.run(email, hashCode(email, code), now + CODE_TTL_MS, now);
+  await run(SQL.purgeCodes, [now]); // 顺手清理过期验证码
+  await run(SQL.upsertCode, [email, hashCode(email, code), now + CODE_TTL_MS, now]);
 
   res.json({
     ok: true,
@@ -283,13 +304,13 @@ app.post('/api/send-code', async (req, res) => {
     dev,
     devCode: dev ? code : undefined,
     message: dev
-      ? `开发模式（SMTP 未配置）：本次验证码为 ${code}`
-      : `验证码已发送至 ${email}，10 分钟内有效`
+      ? '开发模式（SMTP 未配置）：本次验证码为 ' + code
+      : '验证码已发送至 ' + email + '，10 分钟内有效'
   });
 });
 
 /** 注册 */
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
   const username = String(req.body?.username || '').trim();
   const email = String(req.body?.email || '').trim().toLowerCase();
   const code = String(req.body?.code || '').trim();
@@ -298,43 +319,43 @@ app.post('/api/register', (req, res) => {
   const err = checkCredentials({ username, email, code, password }, true);
   if (err) return fail(res, 400, err);
 
-  if (q.userByEmail.get(email)) return fail(res, 409, '该邮箱已注册，请直接登录');
+  if (await one(SQL.userByEmail, [email])) return fail(res, 409, '该邮箱已注册，请直接登录');
 
-  const record = q.codeByEmail.get(email);
+  const record = await one(SQL.codeByEmail, [email]);
   if (!record) return fail(res, 400, '请先获取邮箱验证码');
 
   const now = Date.now();
-  if (now > record.expires_at) {
-    q.deleteCode.run(email);
+  if (now > Number(record.expires_at)) {
+    await run(SQL.deleteCode, [email]);
     return fail(res, 400, '验证码已过期，请重新获取');
   }
-  if (record.attempts >= CODE_MAX_ATTEMPTS) {
-    q.deleteCode.run(email);
+  if (Number(record.attempts) >= CODE_MAX_ATTEMPTS) {
+    await run(SQL.deleteCode, [email]);
     return fail(res, 429, '验证码错误次数过多，请重新获取');
   }
   if (hashCode(email, code) !== record.code_hash) {
-    q.bumpAttempts.run(email);
+    await run(SQL.bumpAttempts, [email]);
     return fail(res, 400, '验证码不正确');
   }
 
   const { salt, hash } = hashPassword(password);
-  const info = q.insertUser.run(username, email, salt, hash, now);
-  q.deleteCode.run(email);
+  const info = await run(SQL.insertUser, [username, email, salt, hash, now]);
+  await run(SQL.deleteCode, [email]);
 
   const token = newToken();
-  q.insertSession.run(token, Number(info.lastInsertRowid), now, now + SESSION_TTL_MS);
+  await run(SQL.insertSession, [token, Number(info.lastInsertRowid), now, now + SESSION_TTL_MS]);
 
   res.json({ ok: true, token, user: { username, email }, message: '注册成功' });
 });
 
 /** 登录 */
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
 
   if (!EMAIL_RE.test(email) || !password) return fail(res, 400, '请输入邮箱和密码');
 
-  const user = q.userByEmail.get(email);
+  const user = await one(SQL.userByEmail, [email]);
   // 邮箱不存在与密码错误返回相同提示，避免泄露账号是否注册
   if (!user || !verifyPassword(password, user.pwd_salt, user.pwd_hash)) {
     return fail(res, 401, '邮箱或密码不正确');
@@ -342,19 +363,23 @@ app.post('/api/login', (req, res) => {
 
   const now = Date.now();
   const token = newToken();
-  q.insertSession.run(token, user.id, now, now + SESSION_TTL_MS);
+  await run(SQL.insertSession, [token, Number(user.id), now, now + SESSION_TTL_MS]);
 
   res.json({ ok: true, token, user: { username: user.username, email: user.email }, message: '登录成功' });
 });
 
-/* 只对外提供首页这一个文件：不要 express.static 整个目录，
-   否则 config.js（含 SMTP 授权码）与数据库会被直接下载 */
+/* 本机运行时顺手把首页也发出去。云端（Vercel）只部署 server 目录，取不到上一级的 index.html，
+   此时返回一句提示即可，前端页面走 GitHub Pages。 */
 app.get('/', (_req, res) => {
+  const indexFile = path.join(__dirname, '..', 'index.html');
+  if (!fs.existsSync(indexFile)) {
+    return res.type('text/plain').send('后端已就绪。前端页面请访问你的 GitHub Pages 地址。');
+  }
   // 开发期间禁用页面缓存：每次都要回源校验，避免浏览器执行旧脚本。
   // 这里刻意不用 no-store —— 部分预览环境遇到 no-store 会取消/重发文档请求，
   // 在控制台里表现为 net::ERR_ABORTED（页面其实已经加载成功）。
   res.set('Cache-Control', 'no-cache, max-age=0, must-revalidate');
-  res.sendFile(path.join(__dirname, '..', 'index.html'));
+  res.sendFile(indexFile);
 });
 
 /* JSON 解析失败等异常，也返回 JSON，避免前端拿到 HTML 报错页 */
@@ -363,9 +388,15 @@ app.use((err, _req, res, _next) => {
   res.status(err.status || 500).json({ ok: false, message: '服务器内部错误' });
 });
 
-app.listen(PORT, () => {
-  console.log('--------------------------------------------------');
-  console.log(`  服务已启动： http://localhost:${PORT}`);
-  console.log(`  发信模式：   ${smtpReady() ? 'SMTP 真实发信' : '开发模式（验证码显示在页面上）'}`);
-  console.log('--------------------------------------------------');
-});
+/* 本机直接 node server.js 时才监听端口；被 Vercel 引入时只导出 app */
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log('--------------------------------------------------');
+    console.log('  服务已启动： http://localhost:' + PORT);
+    console.log('  数据存储：   ' + (useTurso ? 'Turso 云数据库' : '本地文件 ' + dbUrl));
+    console.log('  发信模式：   ' + (smtpReady() ? 'SMTP 真实发信' : '开发模式（验证码显示在页面上）'));
+    console.log('--------------------------------------------------');
+  });
+}
+
+module.exports = app;

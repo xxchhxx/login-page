@@ -5,12 +5,13 @@
   "description": "邮箱验证码注册 / 登录后端服务",
   "main": "server.js",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=20.0.0"
   },
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "express": "^4.21.2",
     "nodemailer": "^6.9.16"
   }
