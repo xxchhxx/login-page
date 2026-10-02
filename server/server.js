@@ -112,6 +112,11 @@ const dbReady = (async () => {
   await client.batch(SCHEMA);
 })();
 
+// 这个 Promise 在「模块加载」阶段就可能 reject（例如缺数据库配置）。
+// 那一刻还没有任何请求挂上 .catch，Node 会当成 unhandledRejection 直接干掉函数容器（表现为 502）。
+// 先挂一个空 catch 兜住；下面中间件里的 .then().catch() 依旧会返回正常的 500 JSON。
+dbReady.catch(() => {});
+
 const run = (sql, args = []) => client.execute({ sql, args });
 
 async function one(sql, args = []) {
