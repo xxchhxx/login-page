@@ -1088,6 +1088,44 @@
     opacity: 1;
     pointer-events: auto;
   }
+
+  /* ===== WebGL 液态玻璃叠加层 =====
+     脚本 liquid-glass-glass.js 成功初始化后会在 <html> 上添加 .lg。
+     此后玻璃的折射、模糊、边缘高光全部改由 WebGL 画布绘制（画布固定定位，
+     位于 .bg 之上、.stage 之下），这里把原本由 CSS 实现的玻璃外观“让位”给画布，
+     只保留外投影（漂浮感）与文字排版，避免 CSS 与 WebGL 双重叠加导致发灰。
+     若脚本未加载或初始化失败，html 上没有 .lg，页面自动回退到上面的原生外观。 */
+  html.lg .card-shell {
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    /* 外投影保留（玻璃悬浮感）；内侧白色描边改由 WebGL 的 rim highlight 绘制 */
+    box-shadow:
+      0 22px 52px -20px rgba(3, 12, 34, 0.62),
+      0 6px 18px -10px rgba(3, 12, 34, 0.42);
+  }
+  html.lg .card-shell:hover {
+    box-shadow:
+      0 26px 60px -20px rgba(3, 12, 34, 0.68),
+      0 8px 22px -12px rgba(3, 12, 34, 0.46);
+  }
+  html.lg .card-shell::before { display: none; }
+
+  /* 主按钮：底面与投影交给 WebGL，DOM 只保留文字与 hover 流光 */
+  html.lg .btn:not(.ghost),
+  html.lg .btn:not(.ghost):hover {
+    background: none;
+    box-shadow: none;
+  }
+  /* 按压反馈由 WebGL 的 setPressed 负责，DOM 不再缩放，避免文字与玻璃错位 */
+  html.lg .btn:not(.ghost):active {
+    background: none;
+    transform: none;
+  }
+  /* 上面的规则覆盖了 box-shadow，这里补回键盘焦点环以保留可达性 */
+  html.lg .btn:not(.ghost):focus-visible {
+    box-shadow: 0 0 0 3px rgba(124, 196, 255, 0.5);
+  }
 </style>
 </head>
 <body>
@@ -2002,5 +2040,7 @@
   // 本地还留着未过期的 token 时，直接回到应用界面
   restoreSession();
 </script>
+<!-- 液态玻璃叠加层：由 liquid-glass-webgl 打包而来，失败时静默跳过（页面回退到 CSS 外观） -->
+<script src="./liquid-glass-glass.js" defer></script>
 </body>
 </html>
