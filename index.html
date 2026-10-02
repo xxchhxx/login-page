@@ -46,6 +46,8 @@
     /* 阴影：用纯色分层表现高度，不依赖模糊背景 */
     --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10);
     --shadow-2: 0 10px 28px -12px rgba(16, 24, 40, 0.28), 0 2px 8px rgba(16, 24, 40, 0.10);
+    /* 弹窗遮罩：仅压暗背景，不做模糊处理 */
+    --scrim: rgba(15, 23, 34, 0.55);
 
     /* 语义色 */
     --danger: #c62828;
@@ -99,6 +101,7 @@
 
       --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.45);
       --shadow-2: 0 12px 32px -12px rgba(0, 0, 0, 0.75), 0 2px 8px rgba(0, 0, 0, 0.55);
+      --scrim: rgba(0, 0, 0, 0.70);
 
       --danger: #ff8a8d;
       --danger-soft: #3a1d1f;
@@ -935,6 +938,108 @@
     opacity: 1;
     pointer-events: auto;
   }
+
+  /* ===== 登录成功后的公告弹窗 ===== */
+  .modal-mask {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    /* 仅压暗背景，不做毛玻璃模糊 */
+    background: var(--scrim);
+  }
+  .modal-mask.open { display: flex; }
+
+  .modal-card {
+    position: relative;
+    width: min(470px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    padding: 26px 26px 20px;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-2);
+    animation: modal-in 0.22s ease both;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .modal-card::-webkit-scrollbar { width: 6px; }
+  .modal-card::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+  @keyframes modal-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .modal-x {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+  .modal-x:hover { background: var(--surface-2); color: var(--text-primary); }
+  .modal-x svg { width: 16px; height: 16px; }
+
+  .modal-hd { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .modal-badge {
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--on-accent);
+    background: var(--accent);
+  }
+  .modal-date { font-size: 12.5px; color: var(--text-muted); }
+  .modal-card h3 { font-size: 19px; font-weight: 600; letter-spacing: 0.2px; margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+
+  .modal-list { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 20px; }
+  .modal-list li {
+    position: relative;
+    padding-left: 19px;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+  .modal-list li::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .modal-list b { color: var(--text-primary); font-weight: 600; }
+
+  .modal-ft {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 18px;
+    border-top: 1px solid var(--divider);
+  }
+  .modal-ft .check { font-size: 13px; }
+  .modal-ft .btn { width: auto; min-width: 118px; height: 42px; padding: 0 20px; font-size: 14.5px; }
+
+  @media (max-width: 620px) {
+    .modal-ft { flex-direction: column-reverse; align-items: stretch; }
+    .modal-ft .btn { width: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -1095,6 +1200,12 @@
         </div>
 
         <div class="notice-list">
+          <article class="notice">
+            <div class="meta"><span class="tag new">最新</span><time>2026-10-02</time></div>
+            <h3>v1.3.0 更新发布</h3>
+            <p>界面全面改版：移除毛玻璃与半透明效果，统一改为纯色背景设计；主题跟随系统设置自动切换，浅色与深色模式下均保持清晰对比；并统一卡片、按钮与表单的描边和阴影规范。登录后会自动弹出本次更新公告，可勾选「可不再提示」。</p>
+          </article>
+
           <article class="notice">
             <div class="meta"><span class="tag">置顶</span><time>2026-10-01</time></div>
             <h3>系统维护通知</h3>
@@ -1303,7 +1414,7 @@
                 </svg>
                 <b>Windows</b>
               </div>
-              <div class="meta"><span>v1.0.0</span><span>Windows 10 / 11 · 64 位</span><span>约 68 MB</span></div>
+              <div class="meta"><span>v1.3.0</span><span>Windows 10 / 11 · 64 位</span><span>约 68 MB</span></div>
               <button class="btn" type="button" disabled>即将推出</button>
             </div>
 
@@ -1315,7 +1426,7 @@
                 </svg>
                 <b>macOS</b>
               </div>
-              <div class="meta"><span>v1.0.0</span><span>Apple 芯片 / Intel</span><span>约 74 MB</span></div>
+              <div class="meta"><span>v1.3.0</span><span>Apple 芯片 / Intel</span><span>约 74 MB</span></div>
               <button class="btn" type="button" disabled>即将推出</button>
             </div>
 
@@ -1329,7 +1440,7 @@
                 </svg>
                 <b>Android</b>
               </div>
-              <div class="meta"><span>v1.0.0</span><span>Android 8.0+ · APK</span><span>约 32 MB</span></div>
+              <div class="meta"><span>v1.3.0</span><span>Android 8.0+ · APK</span><span>约 32 MB</span></div>
               <button class="btn" type="button" disabled>即将推出</button>
             </div>
 
@@ -1341,7 +1452,7 @@
                 </svg>
                 <b>iOS</b>
               </div>
-              <div class="meta"><span>v1.0.0</span><span>iPhone / iPad</span><span>约 46 MB</span></div>
+              <div class="meta"><span>v1.3.0</span><span>iPhone / iPad</span><span>约 46 MB</span></div>
               <button class="btn" type="button" disabled>即将推出</button>
             </div>
           </div>
@@ -1378,7 +1489,7 @@
           <div class="about-block">
             <h5>版本信息</h5>
             <div class="kv">
-              <span>最新版本 <b>v1.0.0</b></span>
+              <span>最新版本 <b>v1.3.0</b></span>
               <span>更新日期 <b>2026-10-02</b></span>
               <span>支持平台 <b>Windows · macOS · Android · iOS</b></span>
             </div>
@@ -1422,6 +1533,35 @@
           <button class="btn ghost wide" type="button" id="btn-logout">退出登录</button>
         </section>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 登录成功后的公告弹窗（内容由脚本注入，见 ANNOUNCE） ===== -->
+  <div class="modal-mask" id="notice-modal" role="dialog" aria-modal="true" aria-labelledby="notice-title">
+    <div class="modal-card">
+      <button class="modal-x" type="button" id="notice-close" aria-label="关闭公告">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6 6 18"/>
+        </svg>
+      </button>
+
+      <div class="modal-hd">
+        <span class="modal-badge" id="notice-version"></span>
+        <span class="modal-date" id="notice-date"></span>
+      </div>
+
+      <h3 id="notice-title"></h3>
+      <p class="modal-sub" id="notice-sub"></p>
+      <ul class="modal-list" id="notice-list"></ul>
+
+      <div class="modal-ft">
+        <label class="check">
+          <input type="checkbox" id="notice-never">
+          <span class="box"></span>
+          可不再提示
+        </label>
+        <button class="btn" type="button" id="notice-ok">我知道了</button>
       </div>
     </div>
   </div>
@@ -1699,6 +1839,7 @@
         requestAnimationFrame(() => requestAnimationFrame(() => appShell.classList.add('on')));
       }, FADE_MS);
     } else {
+      noticeModal.classList.remove('open'); // 退出登录时一并收起公告
       appShell.classList.remove('on');
       setTimeout(() => {
         appShell.classList.remove('open');
@@ -1707,6 +1848,59 @@
       }, APP_FADE_MS);
     }
   }
+
+  // ===== 登录成功后的公告弹窗 =====
+  // 唯一数据源：修改版本号与条目后，弹窗与「关于我们」的公告内容保持同步维护
+  const ANNOUNCE = {
+    version: 'v1.3.0',
+    date: '2026-10-02',
+    title: 'v1.3.0 已发布',
+    intro: '本次更新包含以下内容：',
+    items: [
+      '<b>全新纯色主题</b>：移除毛玻璃与半透明效果，界面元素统一改为纯色背景，层次更分明。',
+      '<b>深浅色自动切换</b>：主题跟随系统设置，浅色与深色模式下均保持清晰对比。',
+      '<b>视觉层次优化</b>：统一卡片、按钮、表单的描边与阴影规范，突出内容深浅关系。',
+      '<b>登录保护与设备管理</b>：新增异常登录提示与登录设备列表管理。',
+      '<b>注册流程优化</b>：修复部分设备上密码可见性切换异常的问题。'
+    ]
+  };
+
+  // 勾选「可不再提示」后记录版本号；发布新版本时版本号变化，公告会再次弹出
+  const NOTICE_KEY = 'ch-music-notice-seen';
+  const noticeModal = document.getElementById('notice-modal');
+  const noticeNever = document.getElementById('notice-never');
+
+  function showNotice() {
+    if (localStorage.getItem(NOTICE_KEY) === ANNOUNCE.version) return;
+    document.getElementById('notice-version').textContent = ANNOUNCE.version;
+    document.getElementById('notice-date').textContent = ANNOUNCE.date;
+    document.getElementById('notice-title').textContent = ANNOUNCE.title;
+    document.getElementById('notice-sub').textContent = ANNOUNCE.intro;
+    const list = document.getElementById('notice-list');
+    list.innerHTML = '';
+    // 条目为本地静态文案（非用户输入），可用 innerHTML 以便加粗关键词
+    ANNOUNCE.items.forEach((html) => {
+      const li = document.createElement('li');
+      li.innerHTML = html;
+      list.appendChild(li);
+    });
+    noticeNever.checked = false;
+    noticeModal.classList.add('open');
+  }
+
+  function closeNotice() {
+    if (noticeNever.checked) localStorage.setItem(NOTICE_KEY, ANNOUNCE.version);
+    noticeModal.classList.remove('open');
+  }
+
+  document.getElementById('notice-ok').addEventListener('click', closeNotice);
+  document.getElementById('notice-close').addEventListener('click', closeNotice);
+  noticeModal.addEventListener('click', (e) => {
+    if (e.target === noticeModal) closeNotice(); // 点击遮罩空白处关闭
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && noticeModal.classList.contains('open')) closeNotice();
+  });
 
   // 进入应用界面：登录 / 注册 / 刷新恢复 三条路径共用
   function enterApp(data) {
@@ -1723,6 +1917,8 @@
     meExpire.textContent = '剩余 ' + days + ' 天';
     switchTab('intro'); // 每次进入都回到产品介绍
     showApp(true);
+    // 等应用卡片淡入完成后再弹出公告，避免两段动画叠在一起
+    setTimeout(showNotice, FADE_MS + APP_FADE_MS);
   }
 
   // 刷新页面后凭本地 token 恢复身份；token 已失效就静默留在登录页
