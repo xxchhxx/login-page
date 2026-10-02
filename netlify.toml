@@ -3,7 +3,7 @@
 
 [build]
   base = "server"
-  command = "npm install"
+  command = "npm ci"
   publish = "public"
   functions = "netlify/functions"
 

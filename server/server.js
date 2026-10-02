@@ -5,10 +5,10 @@
  *   - 注册需要邮箱验证码（通过 SMTP 真实发信）
  *   - 密码使用 scrypt 加盐哈希存储，不保存明文
  *   - 数据层：本地开发用 SQLite 文件（server/data/app.db）；
- *     配置了 TURSO_DATABASE_URL 后自动切到 Turso 云数据库（Vercel 等无持久磁盘的环境用这个）
+ *     配置了 TURSO_DATABASE_URL 后自动切到 Turso 云数据库（Netlify 等无持久磁盘的环境用这个）
  *
  * 本机启动： node server.js
- * 云端部署： 由 api/index.js 导出为 Vercel 函数
+ * 云端部署： 由 netlify/functions/api.js 包装成 Netlify Function
  */
 
 const path = require('node:path');
@@ -66,9 +66,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TURSO_URL = ENV.TURSO_DATABASE_URL || '';
 const useTurso = Boolean(TURSO_URL);
 
-// 无服务器平台（Netlify / Vercel / Lambda）只有 /tmp 可写且重启即丢，
+// 无服务器平台（Netlify Functions 跑在 Lambda 上）只有 /tmp 可写且重启即丢，
 // 所以这些环境下必须配置 TURSO_DATABASE_URL；缺失时给一条明确提示，而不是在只读目录里崩溃
-const IS_SERVERLESS = Boolean(ENV.NETLIFY || ENV.AWS_LAMBDA_FUNCTION_NAME || ENV.VERCEL);
+const IS_SERVERLESS = Boolean(ENV.NETLIFY || ENV.AWS_LAMBDA_FUNCTION_NAME);
 
 let dbUrl;
 let dbConfigError = null;
@@ -232,7 +232,7 @@ function mailHtml(code) {
 
 const app = express();
 app.disable('x-powered-by');
-// 部署在 Vercel / 反向代理后，用 X-Forwarded-For 的第一跳作为客户端 IP
+// 部署在 Netlify / 反向代理后，用 X-Forwarded-For 的第一跳作为客户端 IP
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '16kb' }));
 
@@ -399,7 +399,7 @@ app.post('/api/login', async (req, res) => {
   res.json({ ok: true, token, user: { username: user.username, email: user.email }, message: '登录成功' });
 });
 
-/* 本机运行时顺手把首页也发出去。云端（Vercel）只部署 server 目录，取不到上一级的 index.html，
+/* 本机运行时顺手把首页也发出去。云端（Netlify）只部署 server 目录，取不到上一级的 index.html，
    此时返回一句提示即可，前端页面走 GitHub Pages。 */
 app.get('/', (_req, res) => {
   const indexFile = path.join(__dirname, '..', 'index.html');
@@ -419,7 +419,7 @@ app.use((err, _req, res, _next) => {
   res.status(err.status || 500).json({ ok: false, message: '服务器内部错误' });
 });
 
-/* 本机直接 node server.js 时才监听端口；被 Vercel 引入时只导出 app */
+/* 本机直接 node server.js 时才监听端口；被 Netlify Function 引入时只导出 app */
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log('--------------------------------------------------');
