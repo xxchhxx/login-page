@@ -254,47 +254,14 @@ app.use((req, res, next) => {
 
 /* ---------------- 数据库就绪检查 ---------------- */
 
-// 临时诊断：暴露 Turso 配置的「形状」（不含完整 Token），
-// 用来判断是变量没读到、还是 URL / Token 格式不对。定位完删除。
-function dbConfigShape() {
-  const rawUrl = String(ENV.TURSO_DATABASE_URL || '');
-  const token = String(ENV.TURSO_AUTH_TOKEN || '');
-  let scheme = '无法解析';
-  let host = '';
-  let hasQuery = false;
-  try {
-    const parsed = new URL(rawUrl);
-    scheme = parsed.protocol.replace(':', '');
-    host = parsed.host;
-    hasQuery = parsed.search.length > 0;
-  } catch (err) {
-    /* 解析失败就保留默认值 */
-  }
-  return {
-    urlScheme: scheme,
-    urlHost: host,
-    urlHasQuery: hasQuery,
-    urlLength: rawUrl.length,
-    tokenPresent: token.length > 0,
-    tokenPrefix: token.slice(0, 3),
-    tokenLength: token.length
-  };
-}
-
 app.use((_req, res, next) => {
   dbReady.then(() => next()).catch((err) => {
     console.error('[数据库不可用]', err.message);
-    const body = {
+    res.status(500).json({
       ok: false,
       message:
         dbConfigError || '数据库连接失败，请检查 TURSO_DATABASE_URL / TURSO_AUTH_TOKEN 配置'
-    };
-    // 临时：带出底层错误与配置形状，定位完删掉
-    if (!dbConfigError) {
-      body.detail = err.message;
-      body.config = dbConfigShape();
-    }
-    res.status(500).json(body);
+    });
   });
 });
 
