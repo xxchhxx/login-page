@@ -1,0 +1,369 @@
+'use strict';
+
+/**
+ * 邮箱注册 / 登录后端服务
+ *   - 注册需要邮箱验证码（通过 SMTP 真实发信）
+ *   - 密码使用 scrypt 加盐哈希存储，不保存明文
+ *   - 数据存放于 server/data/app.db（使用 Node 内置 node:sqlite，无需额外依赖）
+ *
+ * 启动： node server.js
+ */
+
+const path = require('node:path');
+const fs = require('node:fs');
+const crypto = require('node:crypto');
+const express = require('express');
+const nodemailer = require('nodemailer');
+const { DatabaseSync } = require('node:sqlite');
+
+/* ============================ 配置 ============================ */
+
+const CONFIG_PATH = path.join(__dirname, 'config.js');
+const EXAMPLE_PATH = path.join(__dirname, 'config.example.js');
+
+let fileConfig;
+if (fs.existsSync(CONFIG_PATH)) {
+  fileConfig = require(CONFIG_PATH);
+} else {
+  console.warn('[提示] 未找到 server/config.js，改用「环境变量 + config.example.js 默认值」。');
+  console.warn('       本机运行：复制 server\\config.example.js 为 server\\config.js 并填入 SMTP 授权码。');
+  console.warn('       云端部署：直接在平台的环境变量里填 SMTP_HOST / SMTP_USER / SMTP_PASS 等。');
+  fileConfig = require(EXAMPLE_PATH);
+}
+
+// 环境变量优先于 config.js：部署到云端时无需把授权码提交进仓库
+const ENV = process.env;
+const smtpFile = fileConfig.smtp || {};
+
+const config = {
+  port: Number(ENV.PORT || fileConfig.port || 3000),
+  // 允许调用接口的站点来源，逗号分隔；填 '*' 表示不限制。
+  // 前端放在 GitHub Pages 时，这里需包含 https://<你的用户名>.github.io
+  corsOrigin: ENV.CORS_ORIGIN || fileConfig.corsOrigin || '',
+  smtp: {
+    host: ENV.SMTP_HOST || smtpFile.host || '',
+    port: Number(ENV.SMTP_PORT || smtpFile.port || 465),
+    secure: ENV.SMTP_SECURE ? ENV.SMTP_SECURE !== 'false' : smtpFile.secure !== false,
+    user: ENV.SMTP_USER || smtpFile.user || '',
+    pass: ENV.SMTP_PASS || smtpFile.pass || '',
+    from: ENV.SMTP_FROM || smtpFile.from || ''
+  }
+};
+
+const PORT = config.port;
+const CODE_TTL_MS = 10 * 60 * 1000;      // 验证码有效期：10 分钟
+const CODE_RESEND_MS = 60 * 1000;        // 同一邮箱重发冷却：60 秒
+const CODE_MAX_ATTEMPTS = 5;             // 单个验证码最多校验 5 次
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 登录态有效期：7 天
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/* ============================ 数据库 ============================ */
+
+const DATA_DIR = path.join(__dirname, 'data');
+fs.mkdirSync(DATA_DIR, { recursive: true });
+const db = new DatabaseSync(path.join(DATA_DIR, 'app.db'));
+
+db.exec(`
+  PRAGMA journal_mode = WAL;
+
+  CREATE TABLE IF NOT EXISTS users (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    username   TEXT    NOT NULL,
+    email      TEXT    NOT NULL UNIQUE,
+    pwd_salt   TEXT    NOT NULL,
+    pwd_hash   TEXT    NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS email_codes (
+    email      TEXT    PRIMARY KEY,
+    code_hash  TEXT    NOT NULL,
+    expires_at INTEGER NOT NULL,
+    sent_at    INTEGER NOT NULL,
+    attempts   INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS sessions (
+    token      TEXT    PRIMARY KEY,
+    user_id    INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL
+  );
+`);
+
+const q = {
+  userByEmail: db.prepare('SELECT * FROM users WHERE email = ?'),
+  insertUser: db.prepare(
+    'INSERT INTO users (username, email, pwd_salt, pwd_hash, created_at) VALUES (?, ?, ?, ?, ?)'
+  ),
+  codeByEmail: db.prepare('SELECT * FROM email_codes WHERE email = ?'),
+  upsertCode: db.prepare(`
+    INSERT INTO email_codes (email, code_hash, expires_at, sent_at, attempts)
+    VALUES (?, ?, ?, ?, 0)
+    ON CONFLICT(email) DO UPDATE SET
+      code_hash  = excluded.code_hash,
+      expires_at = excluded.expires_at,
+      sent_at    = excluded.sent_at,
+      attempts   = 0
+  `),
+  bumpAttempts: db.prepare('UPDATE email_codes SET attempts = attempts + 1 WHERE email = ?'),
+  deleteCode: db.prepare('DELETE FROM email_codes WHERE email = ?'),
+  purgeCodes: db.prepare('DELETE FROM email_codes WHERE expires_at < ?'),
+  insertSession: db.prepare(
+    'INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)'
+  )
+};
+
+/* ============================ 工具函数 ============================ */
+
+/** 密码加盐哈希（scrypt），返回 { salt, hash } */
+function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
+  const hash = crypto
+    .scryptSync(password.normalize('NFKC'), salt, 64, { N: 16384, r: 8, p: 1 })
+    .toString('hex');
+  return { salt, hash };
+}
+
+/** 恒定时间比较，避免时序侧信道 */
+function verifyPassword(password, salt, expectedHex) {
+  const actual = crypto.scryptSync(password.normalize('NFKC'), salt, 64, { N: 16384, r: 8, p: 1 });
+  const expected = Buffer.from(expectedHex, 'hex');
+  return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+}
+
+const hashCode = (email, code) =>
+  crypto.createHash('sha256').update(`${email}:${code}`).digest('hex');
+
+const newToken = () => crypto.randomBytes(32).toString('hex');
+
+/* ---------------- 简易 IP 限流（防止接口被刷） ---------------- */
+
+const ipHits = new Map();
+function ipRateLimited(ip, max = 12, windowMs = 10 * 60 * 1000) {
+  const now = Date.now();
+  const hits = (ipHits.get(ip) || []).filter((t) => now - t < windowMs);
+  if (hits.length >= max) {
+    ipHits.set(ip, hits);
+    return true;
+  }
+  hits.push(now);
+  ipHits.set(ip, hits);
+  return false;
+}
+
+/* ---------------- 邮件发送 ---------------- */
+
+const smtpReady = () => {
+  const s = config.smtp || {};
+  return Boolean(s.host && s.user && s.pass);
+};
+
+let transporter = null;
+function mailer() {
+  if (!transporter) {
+    const s = config.smtp;
+    transporter = nodemailer.createTransport({
+      host: s.host,
+      port: s.port || 465,
+      secure: s.secure !== false,
+      auth: { user: s.user, pass: s.pass }
+    });
+  }
+  return transporter;
+}
+
+function mailHtml(code) {
+  return `
+  <div style="font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:#f2f5fa;padding:32px">
+    <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;
+                box-shadow:0 8px 28px rgba(20,50,110,.12)">
+      <div style="background:linear-gradient(135deg,#2a6dff,#5fcaff);padding:24px 28px;color:#fff">
+        <div style="font-size:18px;font-weight:600">邮箱验证码</div>
+      </div>
+      <div style="padding:28px">
+        <p style="margin:0 0 18px;color:#33415c;font-size:14px">你正在注册账号，请在页面中填入以下验证码完成验证：</p>
+        <div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#0078D4;
+                    background:#eef5ff;border-radius:10px;padding:16px;text-align:center">${code}</div>
+        <p style="margin:18px 0 0;color:#7b879e;font-size:12.5px">
+          验证码 10 分钟内有效。若非本人操作，请忽略本邮件。
+        </p>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================ HTTP 服务 ============================ */
+
+const app = express();
+app.disable('x-powered-by');
+app.use(express.json({ limit: '16kb' }));
+
+/* ---------------- 跨域：允许 GitHub Pages 等外部站点调用接口 ---------------- */
+
+const DEFAULT_ORIGINS = [
+  'https://xxchhxx.github.io',   // 前端所在的 GitHub Pages
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'null'                         // 直接用浏览器打开本地 index.html 时 Origin 为 null
+];
+const allowOrigins = (config.corsOrigin ? config.corsOrigin.split(',') : DEFAULT_ORIGINS)
+  .map((s) => String(s).trim())
+  .filter(Boolean);
+const allowAllOrigins = allowOrigins.includes('*');
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && (allowAllOrigins || allowOrigins.includes(origin))) {
+    res.set('Access-Control-Allow-Origin', origin);
+    res.set('Vary', 'Origin');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Max-Age', '600');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204); // 预检请求
+  next();
+});
+
+/** 统一的失败返回 */
+const fail = (res, status, message) => res.status(status).json({ ok: false, message });
+
+function checkCredentials({ username, email, code, password }, needCode) {
+  if (!username || username.trim().length < 2 || username.trim().length > 20) {
+    return '用户名长度需为 2–20 个字符';
+  }
+  if (!EMAIL_RE.test(email)) return '请输入有效的邮箱地址';
+  if (password.length < 8) return '密码至少需要 8 位';
+  if (needCode && !/^\d{6}$/.test(code)) return '请输入 6 位数字验证码';
+  return null;
+}
+
+/** 发送注册验证码 */
+app.post('/api/send-code', async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+
+  if (!EMAIL_RE.test(email)) return fail(res, 400, '请输入有效的邮箱地址');
+  if (q.userByEmail.get(email)) return fail(res, 409, '该邮箱已注册，请直接登录');
+  if (ipRateLimited(req.ip)) return fail(res, 429, '操作过于频繁，请稍后再试');
+
+  const now = Date.now();
+  const existing = q.codeByEmail.get(email);
+  if (existing && now - existing.sent_at < CODE_RESEND_MS) {
+    const wait = Math.ceil((CODE_RESEND_MS - (now - existing.sent_at)) / 1000);
+    return fail(res, 429, `请求过于频繁，请 ${wait} 秒后再试`);
+  }
+
+  const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+  const dev = !smtpReady();
+
+  if (!dev) {
+    try {
+      await mailer().sendMail({
+        from: config.smtp.from || config.smtp.user,
+        to: email,
+        subject: '【注册验证码】请在 10 分钟内完成验证',
+        html: mailHtml(code)
+      });
+    } catch (err) {
+      console.error('[邮件发送失败]', err.message);
+      return fail(res, 502, '验证码发送失败，请检查 SMTP 配置后重试');
+    }
+  } else {
+    console.warn(`[开发模式] SMTP 未配置，${email} 的验证码为：${code}（10 分钟内有效）`);
+  }
+
+  q.purgeCodes.run(now); // 顺手清理过期验证码
+  q.upsertCode.run(email, hashCode(email, code), now + CODE_TTL_MS, now);
+
+  res.json({
+    ok: true,
+    cooldown: CODE_RESEND_MS / 1000,
+    dev,
+    devCode: dev ? code : undefined,
+    message: dev
+      ? `开发模式（SMTP 未配置）：本次验证码为 ${code}`
+      : `验证码已发送至 ${email}，10 分钟内有效`
+  });
+});
+
+/** 注册 */
+app.post('/api/register', (req, res) => {
+  const username = String(req.body?.username || '').trim();
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const code = String(req.body?.code || '').trim();
+  const password = String(req.body?.password || '');
+
+  const err = checkCredentials({ username, email, code, password }, true);
+  if (err) return fail(res, 400, err);
+
+  if (q.userByEmail.get(email)) return fail(res, 409, '该邮箱已注册，请直接登录');
+
+  const record = q.codeByEmail.get(email);
+  if (!record) return fail(res, 400, '请先获取邮箱验证码');
+
+  const now = Date.now();
+  if (now > record.expires_at) {
+    q.deleteCode.run(email);
+    return fail(res, 400, '验证码已过期，请重新获取');
+  }
+  if (record.attempts >= CODE_MAX_ATTEMPTS) {
+    q.deleteCode.run(email);
+    return fail(res, 429, '验证码错误次数过多，请重新获取');
+  }
+  if (hashCode(email, code) !== record.code_hash) {
+    q.bumpAttempts.run(email);
+    return fail(res, 400, '验证码不正确');
+  }
+
+  const { salt, hash } = hashPassword(password);
+  const info = q.insertUser.run(username, email, salt, hash, now);
+  q.deleteCode.run(email);
+
+  const token = newToken();
+  q.insertSession.run(token, Number(info.lastInsertRowid), now, now + SESSION_TTL_MS);
+
+  res.json({ ok: true, token, user: { username, email }, message: '注册成功' });
+});
+
+/** 登录 */
+app.post('/api/login', (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const password = String(req.body?.password || '');
+
+  if (!EMAIL_RE.test(email) || !password) return fail(res, 400, '请输入邮箱和密码');
+
+  const user = q.userByEmail.get(email);
+  // 邮箱不存在与密码错误返回相同提示，避免泄露账号是否注册
+  if (!user || !verifyPassword(password, user.pwd_salt, user.pwd_hash)) {
+    return fail(res, 401, '邮箱或密码不正确');
+  }
+
+  const now = Date.now();
+  const token = newToken();
+  q.insertSession.run(token, user.id, now, now + SESSION_TTL_MS);
+
+  res.json({ ok: true, token, user: { username: user.username, email: user.email }, message: '登录成功' });
+});
+
+/* 只对外提供首页这一个文件：不要 express.static 整个目录，
+   否则 config.js（含 SMTP 授权码）与数据库会被直接下载 */
+app.get('/', (_req, res) => {
+  // 开发期间禁用页面缓存：每次都要回源校验，避免浏览器执行旧脚本。
+  // 这里刻意不用 no-store —— 部分预览环境遇到 no-store 会取消/重发文档请求，
+  // 在控制台里表现为 net::ERR_ABORTED（页面其实已经加载成功）。
+  res.set('Cache-Control', 'no-cache, max-age=0, must-revalidate');
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
+});
+
+/* JSON 解析失败等异常，也返回 JSON，避免前端拿到 HTML 报错页 */
+app.use((err, _req, res, _next) => {
+  console.error('[服务异常]', err.message);
+  res.status(err.status || 500).json({ ok: false, message: '服务器内部错误' });
+});
+
+app.listen(PORT, () => {
+  console.log('--------------------------------------------------');
+  console.log(`  服务已启动： http://localhost:${PORT}`);
+  console.log(`  发信模式：   ${smtpReady() ? 'SMTP 真实发信' : '开发模式（验证码显示在页面上）'}`);
+  console.log('--------------------------------------------------');
+});

@@ -1,0 +1,17 @@
+{
+  "name": "login-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "邮箱验证码注册 / 登录后端服务",
+  "main": "server.js",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "nodemailer": "^6.9.16"
+  }
+}

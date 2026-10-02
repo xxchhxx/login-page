@@ -495,6 +495,48 @@
   .notice h3 { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
   .notice p { font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); }
 
+  /* ===== 验证码按钮 ===== */
+  .code-btn {
+    flex: none;
+    height: 32px;
+    padding: 0 12px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #a9d9ff;
+    background: rgba(255, 255, 255, 0.10);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.16s ease, color 0.16s ease, opacity 0.16s ease;
+  }
+  .code-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); color: #e2f1ff; }
+  .code-btn:disabled { cursor: default; opacity: 0.5; color: var(--text-secondary); }
+  .input-wrap input#reg-code { letter-spacing: 2px; }
+
+  /* ===== 表单提示（错误 / 成功） ===== */
+  .msg {
+    display: none;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 2px 0 18px;
+    padding: 10px 13px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .msg.show { display: flex; }
+  .msg svg { width: 15px; height: 15px; flex: none; margin-top: 1.5px; }
+  .msg.err { color: #ffd9dd; background: rgba(255, 92, 108, 0.16); border-color: rgba(255, 122, 136, 0.46); }
+  .msg.ok  { color: #d2ffe5; background: rgba(52, 199, 123, 0.15); border-color: rgba(92, 220, 152, 0.42); }
+
+  /* 提交按钮的加载态 */
+  .btn:disabled { cursor: default; transform: none; }
+  .btn:disabled::after { animation: none; }
+
   /* ===== 面板切换：淡出 / 淡入（线性） ===== */
   /* 两个面板重叠定位在卡片内，卡片高度由 JS 固定为较高者，
      切换时高度不变、无布局跳动，从而避免“抽搐拉长” */
@@ -545,13 +587,13 @@
         </div>
 
         <div class="field">
-          <label for="login-account">用户名或邮箱</label>
+          <label for="login-mail">邮箱</label>
           <div class="input-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="8" r="4"/>
-              <path d="M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5"/>
+              <rect x="3" y="5" width="18" height="14" rx="2.5"/>
+              <path d="m3 7 9 6 9-6"/>
             </svg>
-            <input id="login-account" type="text" placeholder="请输入用户名或邮箱">
+            <input id="login-mail" type="email" placeholder="请输入邮箱" autocomplete="username">
           </div>
         </div>
 
@@ -574,14 +616,16 @@
 
         <div class="row">
           <label class="check">
-            <input type="checkbox">
+            <input type="checkbox" id="remember">
             <span class="box"></span>
             记住我
           </label>
           <a href="#">忘记密码?</a>
         </div>
 
-        <button class="btn" type="button">登录</button>
+        <div class="msg" id="login-msg" role="status" aria-live="polite"></div>
+
+        <button class="btn" type="button" id="btn-login">登录</button>
 
         <div class="switch-hint">
           还没有账户?
@@ -623,7 +667,19 @@
               <rect x="3" y="5" width="18" height="14" rx="2.5"/>
               <path d="m3 7 9 6 9-6"/>
             </svg>
-            <input id="reg-mail" type="email" placeholder="请输入邮箱">
+            <input id="reg-mail" type="email" placeholder="请输入邮箱" autocomplete="email">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="reg-code">邮箱验证码</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3 4.5 6v5.5c0 4.3 3 7.8 7.5 9.5 4.5-1.7 7.5-5.2 7.5-9.5V6L12 3Z"/>
+              <path d="m9.2 12 2 2 3.6-3.8"/>
+            </svg>
+            <input id="reg-code" type="text" inputmode="numeric" maxlength="6" placeholder="6 位数字验证码" autocomplete="one-time-code">
+            <button class="code-btn" type="button" id="btn-send-code">获取验证码</button>
           </div>
         </div>
 
@@ -634,7 +690,7 @@
               <path d="M6 10V8a6 6 0 0 1 12 0v2"/>
               <rect x="4.5" y="10" width="15" height="10" rx="2.5"/>
             </svg>
-            <input id="reg-pwd" type="password" placeholder="请设置密码">
+            <input id="reg-pwd" type="password" placeholder="请设置密码（至少 8 位）" autocomplete="new-password">
             <button class="showpwd" type="button" data-target="reg-pwd" aria-label="显示密码">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/>
@@ -644,7 +700,9 @@
           </div>
         </div>
 
-        <button class="btn" type="button">注册</button>
+        <div class="msg" id="reg-msg" role="status" aria-live="polite"></div>
+
+        <button class="btn" type="button" id="btn-register">注册</button>
 
         <div class="switch-hint">
           已有账户?
@@ -706,6 +764,18 @@
 
 <script>
   const FADE_MS = 260; // 与 CSS 中 transition 时长保持一致（线性）
+
+  // ===== 后端地址 =====
+  // 页面与后端同源时（本机 node server.js 打开、或直接打开后端公网地址）留空即可。
+  // 仅当前端放在 GitHub Pages、后端部署在别处时，才需要填后端公网地址（结尾不要带斜杠）。
+  // 例： const BACKEND_URL = 'https://login-server.onrender.com';
+  const BACKEND_URL = '';
+  const SAME_ORIGIN_HOSTS = ['localhost', '127.0.0.1', ''];
+  const API_URL =
+    (SAME_ORIGIN_HOSTS.indexOf(location.hostname) !== -1 ? '' : BACKEND_URL) + '/api';
+  if (!BACKEND_URL && SAME_ORIGIN_HOSTS.indexOf(location.hostname) === -1) {
+    console.warn('[提示] 当前页面与后端不同源，且尚未配置 BACKEND_URL，/api 请求会打到静态站点而失败。');
+  }
 
   // ===== 背景星光：随机分布、错峰闪烁 =====
   (function makeStars() {
@@ -771,12 +841,157 @@
     });
   });
 
-  // 登录 / 注册按钮 —— 暂不限制，直接占位（后端逻辑后续完善）
-  document.querySelectorAll('.card-shell .btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const form = btn.closest('form');
-      const mode = form.id === 'panel-login' ? '登录' : '注册';
-      console.log(`[${mode}] 暂不限制，点击有效（后端逻辑后续完善）`);
+  // ===== 与后端接口通信 =====
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const ICON = {
+    err: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.4" r="1" fill="currentColor" stroke="none"/></svg>',
+    ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.4 2.7 2.6L16 9.6"/></svg>'
+  };
+
+  // 显示 / 清除表单提示；提示会改变面板高度，需重新测量卡片高度
+  function setMsg(id, type, text) {
+    const el = document.getElementById(id);
+    if (!text) {
+      el.className = 'msg';
+      el.textContent = '';
+    } else {
+      el.className = 'msg show ' + type;
+      el.innerHTML = ICON[type] + '<span></span>';
+      el.querySelector('span').textContent = text; // 用 textContent 写入，避免 XSS
+    }
+    sizeShell();
+  }
+
+  async function api(path, body) {
+    try {
+      const res = await fetch(API_URL + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok && !data.message) {
+        data.message = '接口请求失败（HTTP ' + res.status + '），请检查后端地址是否正确';
+      }
+      return { ok: res.ok, data };
+    } catch {
+      return { ok: false, data: { message: '无法连接服务器，请确认后端已启动并可公网访问' } };
+    }
+  }
+
+  // 提交按钮的加载态包装
+  async function withLoading(btn, text, fn) {
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = text;
+    try { await fn(); } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  // 记住我 → 选择 token 的存放位置
+  function saveToken(token) {
+    if (!token) return;
+    const remember = document.getElementById('remember').checked;
+    (remember ? localStorage : sessionStorage).setItem('token', token);
+  }
+
+  // ----- 获取邮箱验证码（60 秒倒计时） -----
+  const sendBtn = document.getElementById('btn-send-code');
+  let cooldownTimer = null;
+
+  function startCooldown(seconds) {
+    let left = seconds;
+    sendBtn.disabled = true;
+    sendBtn.textContent = left + 's 后重发';
+    clearInterval(cooldownTimer);
+    cooldownTimer = setInterval(() => {
+      left -= 1;
+      if (left <= 0) {
+        clearInterval(cooldownTimer);
+        sendBtn.disabled = false;
+        sendBtn.textContent = '获取验证码';
+      } else {
+        sendBtn.textContent = left + 's 后重发';
+      }
+    }, 1000);
+  }
+
+  sendBtn.addEventListener('click', async () => {
+    const email = document.getElementById('reg-mail').value.trim();
+    if (!EMAIL_RE.test(email)) return setMsg('reg-msg', 'err', '请先填写有效的邮箱地址');
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = '发送中…';
+    setMsg('reg-msg', '', '');
+    const { ok, data } = await api('/send-code', { email });
+
+    if (!ok) {
+      sendBtn.disabled = false;
+      sendBtn.textContent = '获取验证码';
+      return setMsg('reg-msg', 'err', data.message || '验证码发送失败');
+    }
+    startCooldown(data.cooldown || 60);
+    setMsg('reg-msg', 'ok', data.message);
+  });
+
+  // ----- 注册 -----
+  document.getElementById('btn-register').addEventListener('click', (e) => {
+    withLoading(e.currentTarget, '注册中…', async () => {
+      const username = document.getElementById('reg-user').value.trim();
+      const email = document.getElementById('reg-mail').value.trim();
+      const code = document.getElementById('reg-code').value.trim();
+      const password = document.getElementById('reg-pwd').value;
+
+      if (username.length < 2 || username.length > 20) return setMsg('reg-msg', 'err', '用户名长度需为 2–20 个字符');
+      if (!EMAIL_RE.test(email)) return setMsg('reg-msg', 'err', '请输入有效的邮箱地址');
+      if (!/^\d{6}$/.test(code)) return setMsg('reg-msg', 'err', '请输入 6 位数字验证码');
+      if (password.length < 8) return setMsg('reg-msg', 'err', '密码至少需要 8 位');
+
+      setMsg('reg-msg', '', '');
+      const { ok, data } = await api('/register', { username, email, code, password });
+      if (!ok) return setMsg('reg-msg', 'err', data.message || '注册失败');
+
+      saveToken(data.token);
+      setMsg('reg-msg', 'ok', '注册成功，欢迎你 ' + data.user.username + '！');
+
+      // 注册即已登录：稍后回到登录面板，邮箱已填好
+      document.getElementById('login-mail').value = email;
+      document.getElementById('login-pwd').value = '';
+      setTimeout(() => {
+        switchPanel('login');
+        setMsg('reg-msg', '', '');
+        setMsg('login-msg', 'ok', '注册成功，请使用刚才设置的密码登录');
+      }, 1200);
+    });
+  });
+
+  // ----- 登录 -----
+  document.getElementById('btn-login').addEventListener('click', (e) => {
+    withLoading(e.currentTarget, '登录中…', async () => {
+      const email = document.getElementById('login-mail').value.trim();
+      const password = document.getElementById('login-pwd').value;
+
+      if (!EMAIL_RE.test(email)) return setMsg('login-msg', 'err', '请输入有效的邮箱地址');
+      if (!password) return setMsg('login-msg', 'err', '请输入密码');
+
+      setMsg('login-msg', '', '');
+      const { ok, data } = await api('/login', { email, password });
+      if (!ok) return setMsg('login-msg', 'err', data.message || '登录失败');
+
+      saveToken(data.token);
+      setMsg('login-msg', 'ok', `登录成功，欢迎回来 ${data.user.username}！`);
+    });
+  });
+
+  // 回车键直接提交所在面板
+  document.querySelectorAll('.panel form').forEach((form) => {
+    form.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        form.querySelector('.btn').click();
+      }
     });
   });
 
