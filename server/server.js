@@ -51,11 +51,11 @@ const config = {
     pass: ENV.SMTP_PASS || smtpFile.pass || '',
     from: ENV.SMTP_FROM || smtpFile.from || 'xxchhxx'
   },
-  // Gitee 扫码登录（Gitee OAuth 2.0）。Client Secret 只在服务端使用，绝不下发给前端。
-  gitee: {
-    appId: ENV.GITEE_APPID || (fileConfig.gitee && fileConfig.gitee.appId) || '',
-    appKey: ENV.GITEE_APPKEY || (fileConfig.gitee && fileConfig.gitee.appKey) || '',
-    redirectUri: ENV.GITEE_REDIRECT_URI || (fileConfig.gitee && fileConfig.gitee.redirectUri) || ''
+  // GitHub 授权登录（GitHub OAuth App）。Client Secret 只在服务端使用，绝不下发给前端。
+  github: {
+    appId: ENV.GITHUB_APPID || (fileConfig.github && fileConfig.github.appId) || '',
+    appKey: ENV.GITHUB_APPKEY || (fileConfig.github && fileConfig.github.appKey) || '',
+    redirectUri: ENV.GITHUB_REDIRECT_URI || (fileConfig.github && fileConfig.github.redirectUri) || ''
   }
 };
 
@@ -97,7 +97,7 @@ const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS users (' +
     'id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, email TEXT NOT NULL UNIQUE, ' +
     'pwd_salt TEXT NOT NULL, pwd_hash TEXT NOT NULL, created_at INTEGER NOT NULL, ' +
-    'gitee_id TEXT)',
+    'github_id TEXT)',
   'CREATE TABLE IF NOT EXISTS email_codes (' +
     'email TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, ' +
     'sent_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0)',
@@ -117,14 +117,19 @@ const dbReady = (async () => {
     }
   }
   await client.batch(SCHEMA);
-  // 老库迁移：补 gitee_id 列、移除早期 QQ 方案遗留的 qq_openid 列（列不存在/已迁移时报错，忽略即可）
+  // 老库迁移：补 github_id 列、移除早期 QQ/Gitee 方案遗留的列（列不存在/已迁移时报错，忽略即可）
   try {
-    await client.execute('ALTER TABLE users ADD COLUMN gitee_id TEXT');
+    await client.execute('ALTER TABLE users ADD COLUMN github_id TEXT');
   } catch (err) {
     if (!/duplicate column/i.test(err.message || '')) console.warn('[迁移提示]', err.message);
   }
   try {
     await client.execute('ALTER TABLE users DROP COLUMN qq_openid');
+  } catch (err) {
+    if (!/no such column/i.test(err.message || '')) console.warn('[迁移提示]', err.message);
+  }
+  try {
+    await client.execute('ALTER TABLE users DROP COLUMN gitee_id');
   } catch (err) {
     if (!/no such column/i.test(err.message || '')) console.warn('[迁移提示]', err.message);
   }
@@ -144,11 +149,11 @@ async function one(sql, args = []) {
 
 const SQL = {
   userByEmail: 'SELECT * FROM users WHERE email = ?',
-  userByGitee: 'SELECT * FROM users WHERE gitee_id = ?',
+  userByGithub: 'SELECT * FROM users WHERE github_id = ?',
   insertUser:
     'INSERT INTO users (username, email, pwd_salt, pwd_hash, created_at) VALUES (?, ?, ?, ?, ?)',
-  insertGiteeUser:
-    'INSERT INTO users (username, email, pwd_salt, pwd_hash, created_at, gitee_id) VALUES (?, ?, ?, ?, ?, ?)',
+  insertGithubUser:
+    'INSERT INTO users (username, email, pwd_salt, pwd_hash, created_at, github_id) VALUES (?, ?, ?, ?, ?, ?)',
   codeByEmail: 'SELECT * FROM email_codes WHERE email = ?',
   upsertCode:
     'INSERT INTO email_codes (email, code_hash, expires_at, sent_at, attempts) VALUES (?, ?, ?, ?, 0) ' +
@@ -462,141 +467,144 @@ app.post('/api/logout', async (req, res) => {
   res.json({ ok: true, message: '已退出登录' });
 });
 
-/* ============================ Gitee 扫码登录（Gitee OAuth 2.0） ============================
- * 流程（授权码模式，应用在 https://gitee.com/oauth/applications 创建，个人免审核）：
- *   1. 前端调 GET  /api/gitee/start            → 返回 Gitee 授权页地址 + 签名 state
- *   2. 前端弹窗打开授权页，用户登录 Gitee / 扫码确认授权
- *   3. Gitee 重定向到 redirectUri（前端 gitee-login.html），页面把 code/state 发回 opener
- *   4. 前端调 POST /api/gitee/exchange {code,state} → 服务端校验 state 后换取 access_token、
+/* ============================ GitHub 授权登录（GitHub OAuth App） ============================
+ * 流程（授权码模式，应用在 GitHub → Settings → Developer settings → OAuth Apps 创建，免审核）：
+ *   1. 前端调 GET  /api/github/start            → 返回 GitHub 授权页地址 + 签名 state
+ *   2. 前端弹窗打开授权页，用户登录 GitHub 并确认授权
+ *   3. GitHub 重定向到 redirectUri（前端 github-login.html），页面把 code/state 发回 opener
+ *   4. 前端调 POST /api/github/exchange {code,state} → 服务端校验 state 后换取 access_token、
  *      获取用户资料，自动建号/登录并下发会话 token
  * 安全要点：
  *   - state 由服务端用 Client Secret 做 HMAC 签名（含随机 nonce 与 10 分钟过期），防伪造与 CSRF
  *   - Client Secret 只存在服务端；access_token 不下发前端，会话仍用本站的随机 token
- *   - code 一次性使用（内存去重 + Gitee 侧 code 自然过期兜底）；接口走 IP 限流
+ *   - code 一次性使用（内存去重 + GitHub 侧 code 自然过期兜底）；接口走 IP 限流
  */
 
-const giteeReady = () => Boolean(config.gitee.appId && config.gitee.appKey && config.gitee.redirectUri);
+const githubReady = () => Boolean(config.github.appId && config.github.appKey && config.github.redirectUri);
 
-const GITEE_STATE_TTL_MS = 10 * 60 * 1000; // state 有效期：10 分钟
+const GITHUB_STATE_TTL_MS = 10 * 60 * 1000; // state 有效期：10 分钟
 
 /** state = nonce.exp.hmac(nonce+exp, Client Secret)：无状态签名，serverless 多实例也能校验 */
-function makeGiteeState() {
+function makeGithubState() {
   const nonce = crypto.randomBytes(16).toString('hex');
-  const exp = Date.now() + GITEE_STATE_TTL_MS;
-  const sig = crypto.createHmac('sha256', config.gitee.appKey)
+  const exp = Date.now() + GITHUB_STATE_TTL_MS;
+  const sig = crypto.createHmac('sha256', config.github.appKey)
     .update(nonce + '.' + exp).digest('hex');
   return nonce + '.' + exp + '.' + sig;
 }
 
-function verifyGiteeState(state) {
+function verifyGithubState(state) {
   const parts = String(state || '').split('.');
   if (parts.length !== 3) return false;
   const [nonce, exp, sig] = parts;
   if (!/^\d+$/.test(exp) || Date.now() > Number(exp)) return false;
-  const expect = crypto.createHmac('sha256', config.gitee.appKey)
+  const expect = crypto.createHmac('sha256', config.github.appKey)
     .update(nonce + '.' + exp).digest('hex');
   const a = Buffer.from(sig);
   const b = Buffer.from(expect);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-/** 已使用过的授权码短期去重（code 本身一次性，Gitee 侧过期是最终兜底） */
-const usedGiteeCodes = new Set();
-setInterval(() => usedGiteeCodes.clear(), 30 * 60 * 1000).unref?.();
+/** 已使用过的授权码短期去重（code 本身一次性，GitHub 侧过期是最终兜底） */
+const usedGithubCodes = new Set();
+setInterval(() => usedGithubCodes.clear(), 30 * 60 * 1000).unref?.();
 
 /** 第 1 步：生成授权页地址 */
-app.get('/api/gitee/start', async (req, res) => {
-  if (!giteeReady()) {
-    return fail(res, 501, 'Gitee 登录尚未配置：请在服务端设置 GITEE_APPID / GITEE_APPKEY / GITEE_REDIRECT_URI');
+app.get('/api/github/start', async (req, res) => {
+  if (!githubReady()) {
+    return fail(res, 501, 'GitHub 登录尚未配置：请在服务端设置 GITHUB_APPID / GITHUB_APPKEY / GITHUB_REDIRECT_URI');
   }
   if (ipRateLimited(req.ip)) return fail(res, 429, '操作过于频繁，请稍后再试');
 
-  const state = makeGiteeState();
+  const state = makeGithubState();
   const url =
-    'https://gitee.com/oauth/authorize' +
+    'https://github.com/login/oauth/authorize' +
     '?response_type=code' +
-    '&client_id=' + encodeURIComponent(config.gitee.appId) +
-    '&redirect_uri=' + encodeURIComponent(config.gitee.redirectUri) +
+    '&client_id=' + encodeURIComponent(config.github.appId) +
+    '&redirect_uri=' + encodeURIComponent(config.github.redirectUri) +
     '&state=' + encodeURIComponent(state) +
-    '&scope=' + encodeURIComponent('user_info');
+    '&scope=' + encodeURIComponent('read:user');
 
-  res.json({ ok: true, url, state, message: '请在新窗口完成 Gitee 授权' });
+  res.json({ ok: true, url, state, message: '请在新窗口完成 GitHub 授权' });
 });
 
 /** 第 2 步：用回调 code 换取用户身份，自动建号/登录 */
-app.post('/api/gitee/exchange', async (req, res) => {
-  if (!giteeReady()) {
-    return fail(res, 501, 'Gitee 登录尚未配置：请设置 GITEE_APPID / GITEE_APPKEY / GITEE_REDIRECT_URI');
+app.post('/api/github/exchange', async (req, res) => {
+  if (!githubReady()) {
+    return fail(res, 501, 'GitHub 登录尚未配置：请设置 GITHUB_APPID / GITHUB_APPKEY / GITHUB_REDIRECT_URI');
   }
   if (ipRateLimited(req.ip)) return fail(res, 429, '操作过于频繁，请稍后再试');
 
   const code = String(req.body?.code || '').trim();
   const state = String(req.body?.state || '').trim();
   if (!/^[A-Za-z0-9]{6,64}$/.test(code)) return fail(res, 400, '授权码格式不正确');
-  if (!verifyGiteeState(state)) return fail(res, 400, '授权状态校验失败，请重新发起扫码登录');
-  if (usedGiteeCodes.has(code)) return fail(res, 400, '授权码已被使用，请重新授权');
-  usedGiteeCodes.add(code);
+  if (!verifyGithubState(state)) return fail(res, 400, '授权状态校验失败，请重新发起授权登录');
+  if (usedGithubCodes.has(code)) return fail(res, 400, '授权码已被使用，请重新授权');
+  usedGithubCodes.add(code);
 
-  // 2.1 code → access_token（Gitee 官方要求 POST，form 或 query 均可，这里用 form）
+  // 2.1 code → access_token（GitHub 要求 POST，Accept: application/json 返回 JSON）
   const tokenData = await (async () => {
     try {
-      const r = await fetch('https://gitee.com/oauth/token', {
+      const r = await fetch('https://github.com/login/oauth/access_token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          client_id: config.github.appId,
+          client_secret: config.github.appKey,
           code,
-          client_id: config.gitee.appId,
-          client_secret: config.gitee.appKey,
-          redirect_uri: config.gitee.redirectUri
+          redirect_uri: config.github.redirectUri
         })
       });
-      if (!r.ok) throw new Error('Gitee 接口 HTTP ' + r.status);
+      if (!r.ok) throw new Error('GitHub 接口 HTTP ' + r.status);
       return await r.json();
     } catch {
       return null;
     }
   })();
   const accessToken = tokenData && tokenData.access_token;
-  if (!accessToken) return fail(res, 401, 'Gitee 授权码无效或已过期，请重新授权');
+  if (!accessToken) return fail(res, 401, 'GitHub 授权码无效或已过期，请重新授权');
 
-  // 2.2 access_token → 用户资料（id 唯一且不变，login/昵称/头像用于建号展示）
+  // 2.2 access_token → 用户资料（id 唯一且不变；GitHub API 要求带 User-Agent）
   const profile = await (async () => {
     try {
-      const r = await fetch(
-        'https://gitee.com/api/v5/user?access_token=' + encodeURIComponent(accessToken),
-        { headers: { Accept: 'application/json' } }
-      );
-      if (!r.ok) throw new Error('Gitee 接口 HTTP ' + r.status);
+      const r = await fetch('https://api.github.com/user', {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: 'Bearer ' + accessToken,
+          'User-Agent': 'ch-music-login',
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      });
+      if (!r.ok) throw new Error('GitHub 接口 HTTP ' + r.status);
       return await r.json();
     } catch {
       return null;
     }
   })();
-  const giteeId = profile && (profile.id !== undefined && profile.id !== null)
+  const githubId = profile && (profile.id !== undefined && profile.id !== null)
     ? String(profile.id)
     : '';
-  if (!/^\d{1,20}$/.test(giteeId)) return fail(res, 401, '无法获取 Gitee 身份标识，请重新授权');
+  if (!/^\d{1,20}$/.test(githubId)) return fail(res, 401, '无法获取 GitHub 身份标识，请重新授权');
   const loginName = profile.login ? String(profile.login).trim().slice(0, 20) : '';
   const displayName = profile.name ? String(profile.name).trim().slice(0, 20) : '';
   const avatar = profile.avatar_url ? String(profile.avatar_url) : '';
 
   // 2.3 查找 / 创建本地账号
-  let user = await one(SQL.userByGitee, [giteeId]);
+  let user = await one(SQL.userByGithub, [githubId]);
   if (!user) {
-    // 用户名冲突时追加序号；邮箱列 UNIQUE，Gitee 号用合成的占位邮箱（不可用于密码登录）
-    let username = displayName || loginName || 'Gitee用户';
-    if (username.length < 2) username = 'Gitee用户' + username;
+    // 用户名冲突时追加序号；邮箱列 UNIQUE，GitHub 号用合成的占位邮箱（不可用于密码登录）
+    let username = displayName || loginName || 'GitHub用户';
+    if (username.length < 2) username = 'GitHub用户' + username;
     let candidate = username;
     for (let i = 2; i < 100; i++) {
       const exist = await one('SELECT id FROM users WHERE username = ?', [candidate]);
       if (!exist) break;
       candidate = username + i;
     }
-    const email = 'gitee_' + giteeId + '@gitee.local';
+    const email = 'github_' + githubId + '@github.local';
     const { salt, hash } = hashPassword(crypto.randomBytes(24).toString('hex'));
-    const info2 = await run(SQL.insertGiteeUser, [
-      candidate, email, salt, hash, Date.now(), giteeId
+    const info2 = await run(SQL.insertGithubUser, [
+      candidate, email, salt, hash, Date.now(), githubId
     ]);
     user = { id: Number(info2.lastInsertRowid), username: candidate, email, created_at: Date.now() };
   }
@@ -612,7 +620,7 @@ app.post('/api/gitee/exchange', async (req, res) => {
     user: { username: user.username, email: user.email, avatar },
     createdAt: Number(user.created_at),
     expiresAt: now + SESSION_TTL_MS,
-    message: 'Gitee 登录成功'
+    message: 'GitHub 登录成功'
   });
 });
 
@@ -630,15 +638,15 @@ app.get('/', (_req, res) => {
   res.sendFile(indexFile);
 });
 
-/* Gitee 登录回调页：本地开发时 redirect_uri 指向后端域名（如 http://localhost:3000/gitee-login.html），
+/* GitHub 登录回调页：本地开发时 redirect_uri 指向后端域名（如 http://localhost:3000/github-login.html），
    需要由后端直接发出；部署形态下该文件在前端站点（GitHub Pages）根目录，同名同内容。 */
-app.get('/gitee-login.html', (_req, res) => {
-  const file = path.join(__dirname, '..', 'gitee-login.html');
+app.get('/github-login.html', (_req, res) => {
+  const file = path.join(__dirname, '..', 'github-login.html');
   if (!fs.existsSync(file)) {
     return res
       .status(404)
       .type('text/plain')
-      .send('未找到 gitee-login.html。部署形态下请把它放到前端站点根目录。');
+      .send('未找到 github-login.html。部署形态下请把它放到前端站点根目录。');
   }
   res.set('Cache-Control', 'no-cache, max-age=0, must-revalidate');
   res.sendFile(file);

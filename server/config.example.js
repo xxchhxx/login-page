@@ -25,16 +25,16 @@ module.exports = {
     from: ''        // 发件人显示名，留空则使用 user
   },
 
-  // Gitee 扫码登录（Gitee OAuth 2.0，个人开发者可直接创建应用，无需审核）
-  // 申请步骤：https://gitee.com/oauth/applications → 创建应用。
-  //   应用名称 / 主页随意填；回调地址填前端回调页的完整地址，
-  //   例如 https://<你的用户名>.github.io/gitee-login.html（须与这里完全一致）。
-  //   权限勾选 user_info 即可。创建后可随时在应用详情里更换回调地址，无需审核。
-  // 三项全部填写后，登录页的「Gitee 扫码登录」按钮才会启用；留空则接口返回未配置提示。
-  // 云端部署时改为配置环境变量 GITEE_APPID / GITEE_APPKEY / GITEE_REDIRECT_URI。
-  gitee: {
-    appId: '',       // Gitee 应用的 Client ID
-    appKey: '',      // Gitee 应用的 Client Secret（仅保存在服务端，切勿泄露）
-    redirectUri: ''  // 授权完成后的回调地址（前端 gitee-login.html 的完整 URL）
+  // GitHub 授权登录（GitHub OAuth App，创建即得密钥，无需审核）
+  // 申请步骤：GitHub → Settings → Developer settings → OAuth Apps → New OAuth App。
+  //   Homepage URL 填前端站点地址；Authorization callback URL 填前端回调页的完整地址，
+  //   例如 https://<你的用户名>.github.io/github-login.html（须与这里完全一致）。
+  //   创建后随时可修改回调地址，即时生效。
+  // 三项全部填写后，登录页的「GitHub 登录」按钮才会启用；留空则接口返回未配置提示。
+  // 云端部署时改为配置环境变量 GITHUB_APPID / GITHUB_APPKEY / GITHUB_REDIRECT_URI。
+  github: {
+    appId: '',       // GitHub OAuth App 的 Client ID
+    appKey: '',      // GitHub OAuth App 的 Client Secret（仅保存在服务端，切勿泄露）
+    redirectUri: ''  // 授权完成后的回调地址（前端 github-login.html 的完整 URL）
   }
 };

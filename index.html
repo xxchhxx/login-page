@@ -564,7 +564,7 @@
   }
   @keyframes btn-spin { to { transform: rotate(360deg); } }
 
-  /* ===== 第三方登录分隔线与 Gitee 扫码按钮 ===== */
+  /* ===== 第三方登录分隔线与 GitHub 授权按钮 ===== */
   .alt-divider {
     display: flex;
     align-items: center;
@@ -581,17 +581,17 @@
     height: 1px;
     background: var(--divider);
   }
-  .gitee-btn { height: 46px; margin-bottom: 4px; }
-  .gitee-btn .gitee-ic {
+  .github-btn { height: 46px; margin-bottom: 4px; }
+  .github-btn .github-ic {
     width: 20px;
     height: 20px;
     margin-right: 9px;
     vertical-align: -5px;
-    color: #c71d23; /* Gitee 品牌红 */
+    color: var(--text-primary); /* GitHub octocat 随主题反色：浅色模式黑、深色模式白 */
     transition: color var(--dur-fast) var(--ease-out);
   }
-  .gitee-btn:hover .gitee-ic { color: #a8181d; }
-  .gitee-btn:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft); outline: none; }
+  .github-btn:hover .github-ic { color: var(--text-secondary); }
+  .github-btn:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft); outline: none; }
 
   /* ===== 分隔与切换 ===== */
   .switch-hint {
@@ -1733,9 +1733,9 @@
 
           <div class="alt-divider" role="separator" aria-label="其他登录方式"><span>或</span></div>
 
-          <button class="btn ghost gitee-btn" type="button" id="btn-gitee" title="使用 Gitee 扫码登录">
-            <svg class="gitee-ic" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333H13.7a.79.79 0 0 0-.731.696l-.863 6.38a.47.47 0 0 1-.467.407h-1.749a.237.237 0 0 1-.237-.237l.005-.05.559-4.104a.55.55 0 0 0-.545-.63H7.09A.552.552 0 0 0 6.54 8.2l-.005.05-.774 5.514a1.57 1.57 0 0 0 1.552 1.79h5.664a.785.785 0 0 0 .776-.675l.727-5.25a.47.47 0 0 1 .467-.406h2.661a.552.552 0 0 0 .552-.546l.005-.056.272-1.961a.552.552 0 0 0-.553-.727z"/></svg>
-            Gitee 扫码登录
+          <button class="btn ghost github-btn" type="button" id="btn-github" title="使用 GitHub 账号授权登录">
+            <svg class="github-ic" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            GitHub 登录
           </button>
 
           <div class="switch-hint">
@@ -2617,47 +2617,47 @@
     });
   });
 
-  // ----- Gitee 扫码登录（Gitee OAuth 2.0，弹窗授权 + postMessage 回传） -----
-  const btnGitee = document.getElementById('btn-gitee');
-  const GITEE_STATE_KEY = 'ch-music-gitee-state'; // 前端侧会话比对，配合服务端签名 state 防伪造/CSRF
+  // ----- GitHub 授权登录（GitHub OAuth App，弹窗授权 + postMessage 回传） -----
+  const btnGithub = document.getElementById('btn-github');
+  const GITHUB_STATE_KEY = 'ch-music-github-state'; // 前端侧会话比对，配合服务端签名 state 防伪造/CSRF
 
-  let giteeWin = null;       // 授权弹窗引用
-  let giteeDone = false;     // 本轮授权是否已有结论（成功/失败/取消）
-  let giteeWatchTimer = null;
+  let githubWin = null;       // 授权弹窗引用
+  let githubDone = false;     // 本轮授权是否已有结论（成功/失败/取消）
+  let githubWatchTimer = null;
 
-  function giteeCleanup() {
-    window.removeEventListener('message', giteeOnMessage);
-    if (giteeWatchTimer) { clearInterval(giteeWatchTimer); giteeWatchTimer = null; }
-    giteeWin = null;
+  function githubCleanup() {
+    window.removeEventListener('message', githubOnMessage);
+    if (githubWatchTimer) { clearInterval(githubWatchTimer); githubWatchTimer = null; }
+    githubWin = null;
   }
 
-  /** 授权弹窗里 gitee-login.html 通过 postMessage 把 code/state 发回来 */
-  function giteeOnMessage(e) {
+  /** 授权弹窗里 github-login.html 通过 postMessage 把 code/state 发回来 */
+  function githubOnMessage(e) {
     if (e.origin !== location.origin) return; // 只接受同源主页面的消息
     const d = e.data;
-    if (!d || d.type !== 'gitee-login') return;
+    if (!d || d.type !== 'github-login') return;
 
-    giteeDone = true;
-    if (giteeWin) { try { giteeWin.close(); } catch { /* 用户已手动关闭 */ } }
-    giteeCleanup();
+    githubDone = true;
+    if (githubWin) { try { githubWin.close(); } catch { /* 用户已手动关闭 */ } }
+    githubCleanup();
 
-    const expected = localStorage.getItem(GITEE_STATE_KEY);
-    localStorage.removeItem(GITEE_STATE_KEY);
+    const expected = localStorage.getItem(GITHUB_STATE_KEY);
+    localStorage.removeItem(GITHUB_STATE_KEY);
 
     if (d.error) {
-      setMsg('login-msg', 'err', d.error === 'access_denied' ? '你已取消 Gitee 授权，可随时重新登录' : 'Gitee 授权失败：' + d.error);
+      setMsg('login-msg', 'err', d.error === 'access_denied' ? '你已取消 GitHub 授权，可随时重新登录' : 'GitHub 授权失败：' + d.error);
       return;
     }
-    if (!d.code) { setMsg('login-msg', 'err', '未收到 Gitee 授权码，请重新登录'); return; }
+    if (!d.code) { setMsg('login-msg', 'err', '未收到 GitHub 授权码，请重新登录'); return; }
     if (!d.state || d.state !== expected) {
-      setMsg('login-msg', 'err', '授权状态校验失败，请重新发起扫码登录');
+      setMsg('login-msg', 'err', '授权状态校验失败，请重新发起授权登录');
       return;
     }
 
-    withLoading(btnGitee, '登录中…', async () => {
-      const { ok, data } = await api('/gitee/exchange', { code: d.code, state: d.state });
+    withLoading(btnGithub, '登录中…', async () => {
+      const { ok, data } = await api('/github/exchange', { code: d.code, state: d.state });
       if (!ok) {
-        setMsg('login-msg', 'err', data.message || 'Gitee 登录失败，请稍后重试');
+        setMsg('login-msg', 'err', data.message || 'GitHub 登录失败，请稍后重试');
         return;
       }
       saveToken(data.token);
@@ -2666,51 +2666,51 @@
     });
   }
 
-  btnGitee.addEventListener('click', async (e) => {
+  btnGithub.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
-    // 同源校验后打开授权窗口；授权页支持账号登录或移动端 Gitee App 扫码确认
-    setMsg('login-msg', 'info', '正在打开 Gitee 授权窗口…');
+    // 同源校验后打开授权窗口；用户在 GitHub 授权页确认后自动回调
+    setMsg('login-msg', 'info', '正在打开 GitHub 授权窗口…');
 
     let res, data;
     try {
-      res = await fetch(API_URL + '/gitee/start');
+      res = await fetch(API_URL + '/github/start');
       data = await res.json().catch(() => ({}));
     } catch {
       setMsg('login-msg', 'err', '无法连接服务器，请确认后端已启动并可公网访问');
       return;
     }
     if (!res.ok || !data.ok || !data.url) {
-      setMsg('login-msg', 'err', data.message || 'Gitee 登录暂不可用，请稍后再试');
+      setMsg('login-msg', 'err', data.message || 'GitHub 登录暂不可用，请稍后再试');
       return;
     }
 
-    localStorage.setItem(GITEE_STATE_KEY, data.state);
-    giteeDone = false;
+    localStorage.setItem(GITHUB_STATE_KEY, data.state);
+    githubDone = false;
 
-    const w = Math.min(720, screen.width - 40);
-    const h = Math.min(600, screen.height - 80);
+    const w = Math.min(960, screen.width - 40);
+    const h = Math.min(640, screen.height - 80);
     // 注意：这里不能加 noopener —— 加了 window.open 会返回 null，拿不到弹窗引用，
-    // 也就无法在用户关闭弹窗时清理状态。回调页是同源的 gitee-login.html，无反向劫持风险。
-    giteeWin = window.open(
+    // 也就无法在用户关闭弹窗时清理状态。回调页是同源的 github-login.html，无反向劫持风险。
+    githubWin = window.open(
       data.url,
-      'gitee-login',
+      'github-login',
       'width=' + w + ',height=' + h + ',left=' + Math.max(0, (screen.width - w) / 2) +
         ',top=' + Math.max(0, (screen.height - h) / 2)
     );
-    if (!giteeWin) {
-      localStorage.removeItem(GITEE_STATE_KEY);
+    if (!githubWin) {
+      localStorage.removeItem(GITHUB_STATE_KEY);
       setMsg('login-msg', 'err', '授权窗口被浏览器拦截，请允许本站弹窗后重试');
       return;
     }
 
-    window.addEventListener('message', giteeOnMessage);
+    window.addEventListener('message', githubOnMessage);
     // 用户直接关掉弹窗、没走到回调：轮询检测后清理状态并提示
-    giteeWatchTimer = setInterval(() => {
-      if (giteeWin && giteeWin.closed && !giteeDone) {
-        giteeDone = true;
-        giteeCleanup();
-        localStorage.removeItem(GITEE_STATE_KEY);
-        setMsg('login-msg', 'info', '已取消 Gitee 登录');
+    githubWatchTimer = setInterval(() => {
+      if (githubWin && githubWin.closed && !githubDone) {
+        githubDone = true;
+        githubCleanup();
+        localStorage.removeItem(GITHUB_STATE_KEY);
+        setMsg('login-msg', 'info', '已取消 GitHub 登录');
       }
     }, 500);
   });
