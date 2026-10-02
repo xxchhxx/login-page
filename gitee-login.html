@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Gitee 登录回调 · CH music</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', 'Segoe UI Variable', 'Microsoft YaHei', sans-serif;
+      background: #f2f5fa;
+      color: #14181d;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0e1013; color: #f2f4f7; }
+    }
+    .card {
+      width: min(360px, 88vw);
+      padding: 36px 32px;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 12px 32px -12px rgba(20, 50, 110, 0.18), 0 2px 8px rgba(20, 50, 110, 0.08);
+      text-align: center;
+    }
+    @media (prefers-color-scheme: dark) {
+      .card { background: #1b1e23; box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.75), 0 2px 8px rgba(0, 0, 0, 0.55); }
+    }
+    .icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #eef5ff;
+    }
+    @media (prefers-color-scheme: dark) {
+      .icon { background: #12293d; }
+    }
+    .icon svg { width: 28px; height: 28px; }
+    .icon.ok svg   { stroke: #16a34a; }
+    .icon.err svg  { stroke: #dc2626; }
+    .icon.wait svg { stroke: #0078d4; }
+    .spin { animation: spin 0.9s linear infinite; transform-origin: center; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+    h1 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+    p  { font-size: 13px; line-height: 1.7; color: #5b6472; }
+    @media (prefers-color-scheme: dark) {
+      p { color: #a9b2bd; }
+    }
+    .tip { margin-top: 18px; font-size: 12px; color: #8a93a1; }
+    @media (prefers-color-scheme: dark) {
+      .tip { color: #79838f; }
+    }
+    .tip button {
+      border: none; background: none; padding: 0;
+      font: inherit; color: #0078d4; cursor: pointer;
+      text-decoration: underline; text-underline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon wait" id="icon">
+      <svg id="i-wait" class="spin" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+        <path d="M12 3a9 9 0 1 0 9 9"/>
+      </svg>
+      <svg id="i-ok" style="display:none" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="m8 12.4 2.7 2.6L16 9.6"/>
+      </svg>
+      <svg id="i-err" style="display:none" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16.4" r="1" fill="currentColor" stroke="none"/>
+      </svg>
+    </div>
+    <h1 id="title">正在返回登录…</h1>
+    <p id="desc">已收到 Gitee 授权信息，正在传回主窗口完成登录</p>
+    <div class="tip" id="tip" hidden>
+      窗口未自动关闭？<button type="button" onclick="window.close()">点击关闭</button>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    /**
+     * Gitee 扫码登录回调页（与主页面同域，放在前端站点根目录）。
+     * Gitee 授权完成后重定向到这里并携带 ?code=xxx&state=xxx（或 ?error=xxx）。
+     * 本页把参数通过 postMessage 发回 opener（主页面），由主页面继续完成登录，
+     * 本页自身不接触任何密钥，也不发起登录请求。
+     */
+    (function () {
+      var qs = new URLSearchParams(location.search);
+      var code = qs.get('code') || '';
+      var state = qs.get('state') || '';
+      var error = qs.get('error') || qs.get('error_description') || '';
+
+      function show(type, title, desc) {
+        document.getElementById('icon').className = 'icon ' + type;
+        document.getElementById('i-wait').style.display = 'none';
+        document.getElementById('i-ok').style.display = type === 'ok' ? '' : 'none';
+        document.getElementById('i-err').style.display = type === 'err' ? '' : 'none';
+        document.getElementById('title').textContent = title;
+        document.getElementById('desc').textContent = desc;
+        document.getElementById('tip').hidden = type === 'wait';
+      }
+
+      // 没有 opener（用户直接打开了本页）或参数为空，直接报错，不空转
+      if (!window.opener || window.opener === window) {
+        show('err', '无法完成登录', '请从登录页的「Gitee 扫码登录」重新发起授权');
+        return;
+      }
+
+      var payload = { type: 'gitee-login', code: code, state: state, error: error };
+
+      try {
+        // 只允许同源主页面接收，避免把授权码泄漏给其它站点
+        window.opener.postMessage(payload, window.location.origin);
+      } catch (e) {
+        show('err', '登录中断', '无法把授权结果传回主窗口，请重新发起扫码登录');
+        return;
+      }
+
+      if (error) {
+        show('err', '授权未完成', error === 'access_denied' ? '你已取消 Gitee 授权，可随时重新登录' : 'Gitee 返回了错误：' + error);
+        return;
+      }
+      if (!code) {
+        show('err', '授权未完成', '未收到 Gitee 授权码，请重新登录');
+        return;
+      }
+
+      show('ok', '授权成功', '正在关闭本窗口，请在主页面继续…');
+      // 留一点时间让用户看到提示，然后自动关闭
+      setTimeout(function () { window.close(); }, 600);
+    })();
+  </script>
+</body>
+</html>

@@ -564,6 +564,35 @@
   }
   @keyframes btn-spin { to { transform: rotate(360deg); } }
 
+  /* ===== 第三方登录分隔线与 Gitee 扫码按钮 ===== */
+  .alt-divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 20px 0 16px;
+    color: var(--text-muted);
+    font-size: 12px;
+    user-select: none;
+  }
+  .alt-divider::before,
+  .alt-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--divider);
+  }
+  .gitee-btn { height: 46px; margin-bottom: 4px; }
+  .gitee-btn .gitee-ic {
+    width: 20px;
+    height: 20px;
+    margin-right: 9px;
+    vertical-align: -5px;
+    color: #c71d23; /* Gitee 品牌红 */
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .gitee-btn:hover .gitee-ic { color: #a8181d; }
+  .gitee-btn:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft); outline: none; }
+
   /* ===== 分隔与切换 ===== */
   .switch-hint {
     margin-top: 24px;
@@ -1702,6 +1731,13 @@
 
           <button class="btn" type="button" id="btn-login">登录</button>
 
+          <div class="alt-divider" role="separator" aria-label="其他登录方式"><span>或</span></div>
+
+          <button class="btn ghost gitee-btn" type="button" id="btn-gitee" title="使用 Gitee 扫码登录">
+            <svg class="gitee-ic" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333H13.7a.79.79 0 0 0-.731.696l-.863 6.38a.47.47 0 0 1-.467.407h-1.749a.237.237 0 0 1-.237-.237l.005-.05.559-4.104a.55.55 0 0 0-.545-.63H7.09A.552.552 0 0 0 6.54 8.2l-.005.05-.774 5.514a1.57 1.57 0 0 0 1.552 1.79h5.664a.785.785 0 0 0 .776-.675l.727-5.25a.47.47 0 0 1 .467-.406h2.661a.552.552 0 0 0 .552-.546l.005-.056.272-1.961a.552.552 0 0 0-.553-.727z"/></svg>
+            Gitee 扫码登录
+          </button>
+
           <div class="switch-hint">
             还没有账户?
             <button type="button" data-goto="register">注册</button>
@@ -2579,6 +2615,104 @@
       setMsg('login-msg', '', '');
       enterApp(data);
     });
+  });
+
+  // ----- Gitee 扫码登录（Gitee OAuth 2.0，弹窗授权 + postMessage 回传） -----
+  const btnGitee = document.getElementById('btn-gitee');
+  const GITEE_STATE_KEY = 'ch-music-gitee-state'; // 前端侧会话比对，配合服务端签名 state 防伪造/CSRF
+
+  let giteeWin = null;       // 授权弹窗引用
+  let giteeDone = false;     // 本轮授权是否已有结论（成功/失败/取消）
+  let giteeWatchTimer = null;
+
+  function giteeCleanup() {
+    window.removeEventListener('message', giteeOnMessage);
+    if (giteeWatchTimer) { clearInterval(giteeWatchTimer); giteeWatchTimer = null; }
+    giteeWin = null;
+  }
+
+  /** 授权弹窗里 gitee-login.html 通过 postMessage 把 code/state 发回来 */
+  function giteeOnMessage(e) {
+    if (e.origin !== location.origin) return; // 只接受同源主页面的消息
+    const d = e.data;
+    if (!d || d.type !== 'gitee-login') return;
+
+    giteeDone = true;
+    if (giteeWin) { try { giteeWin.close(); } catch { /* 用户已手动关闭 */ } }
+    giteeCleanup();
+
+    const expected = localStorage.getItem(GITEE_STATE_KEY);
+    localStorage.removeItem(GITEE_STATE_KEY);
+
+    if (d.error) {
+      setMsg('login-msg', 'err', d.error === 'access_denied' ? '你已取消 Gitee 授权，可随时重新登录' : 'Gitee 授权失败：' + d.error);
+      return;
+    }
+    if (!d.code) { setMsg('login-msg', 'err', '未收到 Gitee 授权码，请重新登录'); return; }
+    if (!d.state || d.state !== expected) {
+      setMsg('login-msg', 'err', '授权状态校验失败，请重新发起扫码登录');
+      return;
+    }
+
+    withLoading(btnGitee, '登录中…', async () => {
+      const { ok, data } = await api('/gitee/exchange', { code: d.code, state: d.state });
+      if (!ok) {
+        setMsg('login-msg', 'err', data.message || 'Gitee 登录失败，请稍后重试');
+        return;
+      }
+      saveToken(data.token);
+      setMsg('login-msg', '', '');
+      enterApp(data);
+    });
+  }
+
+  btnGitee.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    // 同源校验后打开授权窗口；授权页支持账号登录或移动端 Gitee App 扫码确认
+    setMsg('login-msg', 'info', '正在打开 Gitee 授权窗口…');
+
+    let res, data;
+    try {
+      res = await fetch(API_URL + '/gitee/start');
+      data = await res.json().catch(() => ({}));
+    } catch {
+      setMsg('login-msg', 'err', '无法连接服务器，请确认后端已启动并可公网访问');
+      return;
+    }
+    if (!res.ok || !data.ok || !data.url) {
+      setMsg('login-msg', 'err', data.message || 'Gitee 登录暂不可用，请稍后再试');
+      return;
+    }
+
+    localStorage.setItem(GITEE_STATE_KEY, data.state);
+    giteeDone = false;
+
+    const w = Math.min(720, screen.width - 40);
+    const h = Math.min(600, screen.height - 80);
+    // 注意：这里不能加 noopener —— 加了 window.open 会返回 null，拿不到弹窗引用，
+    // 也就无法在用户关闭弹窗时清理状态。回调页是同源的 gitee-login.html，无反向劫持风险。
+    giteeWin = window.open(
+      data.url,
+      'gitee-login',
+      'width=' + w + ',height=' + h + ',left=' + Math.max(0, (screen.width - w) / 2) +
+        ',top=' + Math.max(0, (screen.height - h) / 2)
+    );
+    if (!giteeWin) {
+      localStorage.removeItem(GITEE_STATE_KEY);
+      setMsg('login-msg', 'err', '授权窗口被浏览器拦截，请允许本站弹窗后重试');
+      return;
+    }
+
+    window.addEventListener('message', giteeOnMessage);
+    // 用户直接关掉弹窗、没走到回调：轮询检测后清理状态并提示
+    giteeWatchTimer = setInterval(() => {
+      if (giteeWin && giteeWin.closed && !giteeDone) {
+        giteeDone = true;
+        giteeCleanup();
+        localStorage.removeItem(GITEE_STATE_KEY);
+        setMsg('login-msg', 'info', '已取消 Gitee 登录');
+      }
+    }, 500);
   });
 
   // ===== 应用界面（登录成功后） =====
