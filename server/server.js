@@ -310,7 +310,20 @@ app.post('/api/send-code', async (req, res) => {
       });
     } catch (err) {
       console.error('[邮件发送失败]', err.message);
-      return fail(res, 502, '验证码发送失败，请检查 SMTP 配置后重试');
+      return res.status(502).json({
+        ok: false,
+        message: '验证码发送失败，请检查 SMTP 配置后重试',
+        // 临时诊断，定位完删除
+        detail: err.message,
+        code: err.code,
+        smtp: {
+          host: config.smtp.host,
+          port: config.smtp.port,
+          secure: config.smtp.secure,
+          userPresent: Boolean(config.smtp.user),
+          passLength: String(config.smtp.pass || '').length
+        }
+      });
     }
   } else {
     console.warn('[开发模式] SMTP 未配置，' + email + ' 的验证码为：' + code + '（10 分钟内有效）');
