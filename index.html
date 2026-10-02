@@ -18,8 +18,6 @@
     --stroke-strong: rgba(255, 255, 255, 0.38);
     /* 液态玻璃：主层底色只是一层薄白，通透感靠模糊与边缘高光塑造。
        --glass-edge 用于内层子卡片的细描边，形成同心圆角层级 */
-    --glass-tint: rgba(255, 255, 255, 0.08);
-    --glass-tint-2: rgba(255, 255, 255, 0.02);
     --glass-edge: rgba(255, 255, 255, 0.28);
     --radius-lg: 26px;
     --radius-md: 14px;
@@ -45,30 +43,37 @@
     -webkit-font-smoothing: antialiased;
     display: grid;
     place-items: center;
-    background: radial-gradient(120% 120% at 12% 8%, #7ea6e8 0%, #4c7fd6 26%, #2b5fc4 52%, #16356a 80%, #0a1f42 100%);
+    /* 液态玻璃的前提：背景必须有丰富、高饱和的色彩。
+       玻璃本身几乎不染色——所有“色彩感”都来自背景的透出 */
+    background:
+      radial-gradient(ellipse 70% 55% at 18% 12%, #6090ee 0%, transparent 52%),
+      radial-gradient(ellipse 50% 50% at 82% 16%, #8c5cf0 0%, transparent 48%),
+      radial-gradient(ellipse 55% 55% at 78% 78%, #3060c8 0%, transparent 50%),
+      radial-gradient(ellipse 45% 40% at 24% 74%, #1a90b0 0%, transparent 45%),
+      #0c1630;
     background-attachment: fixed;
   }
 
-  /* ===== 背景漂浮光斑（Acrylic 背景氛围） ===== */
+  /* ===== 背景漂浮光斑（液态玻璃背景氛围） ===== */
   .bg {
     position: fixed;
     inset: 0;
     overflow: hidden;
     z-index: 0;
   }
+  /* 斜向彩色条带：被玻璃模糊后形成流动的色带（模拟 iOS 壁纸的渐变条纹） */
   .bg::before {
     content: "";
     position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 85vmax;
-    height: 85vmax;
-    transform: translate(-50%, -50%);
+    inset: 0;
     background:
-      radial-gradient(circle at 25% 25%, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0) 45%),
-      radial-gradient(circle at 75% 65%, rgba(94, 181, 255, 0.55) 0%, rgba(94,181,255,0) 40%),
-      radial-gradient(circle at 70% 15%, rgba(166, 130, 255, 0.5) 0%, rgba(166,130,255,0) 38%);
-    filter: blur(6px);
+      repeating-linear-gradient(135deg,
+        rgba(90, 150, 255, 0.06) 0px,
+        rgba(160, 120, 255, 0.04) 40px,
+        rgba(60, 180, 220, 0.05) 80px,
+        rgba(90, 150, 255, 0.06) 120px);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 48%, #000 0%, transparent 72%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 48%, #000 0%, transparent 72%);
   }
   /* 玻璃质感需要背景有“可被模糊的细节”，这里加一层细网格纹理 */
   .bg::after {
@@ -76,25 +81,38 @@
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: radial-gradient(circle at 50% 45%, #000 0%, rgba(0,0,0,0.35) 55%, transparent 78%);
-    -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, rgba(0,0,0,0.35) 55%, transparent 78%);
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size: 54px 54px;
+    mask-image: radial-gradient(circle at 50% 45%, #000 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 30%, transparent 80%);
   }
+  /* 浮动光斑：给玻璃提供可被模糊的“流动色彩” */
   .blob {
     position: absolute;
     border-radius: 50%;
-    filter: blur(46px);
-    opacity: 0.6;
-    animation: float ease-in-out infinite;
+    filter: blur(80px);
+    animation: float linear infinite;
   }
-  .blob.a { width: 380px; height: 380px; left: 10%; top: 12%; background: #4a92ff; animation-duration: 16s; }
-  .blob.b { width: 300px; height: 300px; right: 12%; bottom: 10%; background: #9a6cff; animation-duration: 20s; }
-  .blob.c { width: 230px; height: 230px; left: 58%; top: 62%; background: #34d0ff; animation-duration: 24s; }
+  .blob.a {
+    width: 460px; height: 460px; left: -6%; top: -10%;
+    background: radial-gradient(circle, #5590f8 0%, #3070d0 50%, #1040a0 100%);
+    animation-duration: 22s;
+  }
+  .blob.b {
+    width: 380px; height: 380px; right: -4%; bottom: -8%;
+    background: radial-gradient(circle, #9970ff 0%, #6040c8 50%, #3820a0 100%);
+    animation-duration: 26s; animation-delay: -6s;
+  }
+  .blob.c {
+    width: 300px; height: 300px; left: 50%; top: 58%;
+    background: radial-gradient(circle, #40c0e0 0%, #1a7898 50%, #084860 100%);
+    animation-duration: 30s; animation-delay: -12s;
+  }
   @keyframes float {
     0%, 100% { transform: translate(0, 0); }
-    50% { transform: translate(24px, -30px); }
+    33%      { transform: translate(24px, -18px); }
+    66%      { transform: translate(-12px, 22px); }
   }
 
   /* ===== 背景星光闪烁 ===== */
@@ -151,23 +169,28 @@
     border-radius: var(--radius-lg);
     padding: 0; /* 内边距由 .panel 承担（绝对定位子元素不受 padding 影响） */
     height: 464px; /* 兜底高度，加载完成后 JS 依据“较高面板”重新设定 */
-    /* 液态玻璃主体：极薄的白色底 + 顶部自然光反射；
-       边缘不靠实色描边，而是由 ::before 的镜面高光环勾勒 */
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 34%, rgba(255, 255, 255, 0) 62%),
-      linear-gradient(165deg, var(--glass-tint) 0%, var(--glass-tint-2) 100%);
+    /* 液态玻璃主体配方：
+       1. 极薄的白色覆层（3-6%）—— 不能更厚，否则发灰
+       2. 超大模糊半径（64px）—— 越大越“液态”
+       3. 高饱和度增强（210%）—— 透出的色彩比背景更鲜亮
+       4. 亮度微增（1.05）—— 玻璃透光后应该更亮 */
+    background: linear-gradient(172deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.03) 28%,
+      rgba(255, 255, 255, 0) 50%,
+      rgba(255, 255, 255, 0.02) 76%,
+      rgba(255, 255, 255, 0.05) 100%);
     box-shadow:
-      /* 外投影：贴近且柔和，模拟玻璃悬浮而不是发光的球 */
-      0 22px 52px -20px rgba(3, 12, 34, 0.62),
-      0 6px 18px -10px rgba(3, 12, 34, 0.42),
+      /* 外投影：只给底部，暗示悬浮 */
+      0 30px 70px -28px rgba(2, 6, 22, 0.76),
+      0 10px 26px -14px rgba(2, 6, 22, 0.44),
       /* 内投影四边：上亮下暗、左右极淡，做出玻璃的厚度 */
-      inset 0 1.2px 0 rgba(255, 255, 255, 0.62),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.14),
-      inset 1px 0 0 rgba(255, 255, 255, 0.18),
-      inset -1px 0 0 rgba(255, 255, 255, 0.18),
-      inset 0 0 58px rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(28px) saturate(200%) brightness(1.04);
-    -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.04);
+      inset 0 1.2px 0 rgba(255, 255, 255, 0.56),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.10),
+      inset 1px 0 0 rgba(255, 255, 255, 0.16),
+      inset -1px 0 0 rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(64px) saturate(210%) brightness(1.05) contrast(1.02);
+    -webkit-backdrop-filter: blur(64px) saturate(210%) brightness(1.05) contrast(1.02);
     overflow: hidden;
     isolation: isolate;
     /* opacity 供认证卡片淡出（进入应用界面）与淡入（退出登录）使用 */
@@ -217,13 +240,12 @@
   }
   .card-shell:hover {
     box-shadow:
-      0 26px 60px -20px rgba(3, 12, 34, 0.68),
-      0 8px 22px -12px rgba(3, 12, 34, 0.46),
-      inset 0 1.2px 0 rgba(255, 255, 255, 0.70),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.18),
-      inset 1px 0 0 rgba(255, 255, 255, 0.22),
-      inset -1px 0 0 rgba(255, 255, 255, 0.22),
-      inset 0 0 62px rgba(255, 255, 255, 0.08);
+      0 34px 80px -28px rgba(2, 6, 22, 0.82),
+      0 12px 30px -16px rgba(2, 6, 22, 0.52),
+      inset 0 1.2px 0 rgba(255, 255, 255, 0.64),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+      inset 1px 0 0 rgba(255, 255, 255, 0.20),
+      inset -1px 0 0 rgba(255, 255, 255, 0.20);
   }
   .card-shell:hover::after {
     animation: shine-sweep 1.15s ease-out;
@@ -241,7 +263,7 @@
     inset: 0;
     z-index: 3;
     pointer-events: none;
-    opacity: 0.07; /* 液态玻璃追求干净通透，颗粒只留极淡一层帮助模糊落点 */
+    opacity: 0.04; /* 液态玻璃追求干净通透，颗粒只留极淡一层帮助模糊落点 */
     mix-blend-mode: soft-light;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
@@ -1087,44 +1109,6 @@
   .panel.on {
     opacity: 1;
     pointer-events: auto;
-  }
-
-  /* ===== WebGL 液态玻璃叠加层 =====
-     脚本 liquid-glass-glass.js 成功初始化后会在 <html> 上添加 .lg。
-     此后玻璃的折射、模糊、边缘高光全部改由 WebGL 画布绘制（画布固定定位，
-     位于 .bg 之上、.stage 之下），这里把原本由 CSS 实现的玻璃外观“让位”给画布，
-     只保留外投影（漂浮感）与文字排版，避免 CSS 与 WebGL 双重叠加导致发灰。
-     若脚本未加载或初始化失败，html 上没有 .lg，页面自动回退到上面的原生外观。 */
-  html.lg .card-shell {
-    background: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    /* 外投影保留（玻璃悬浮感）；内侧白色描边改由 WebGL 的 rim highlight 绘制 */
-    box-shadow:
-      0 22px 52px -20px rgba(3, 12, 34, 0.62),
-      0 6px 18px -10px rgba(3, 12, 34, 0.42);
-  }
-  html.lg .card-shell:hover {
-    box-shadow:
-      0 26px 60px -20px rgba(3, 12, 34, 0.68),
-      0 8px 22px -12px rgba(3, 12, 34, 0.46);
-  }
-  html.lg .card-shell::before { display: none; }
-
-  /* 主按钮：底面与投影交给 WebGL，DOM 只保留文字与 hover 流光 */
-  html.lg .btn:not(.ghost),
-  html.lg .btn:not(.ghost):hover {
-    background: none;
-    box-shadow: none;
-  }
-  /* 按压反馈由 WebGL 的 setPressed 负责，DOM 不再缩放，避免文字与玻璃错位 */
-  html.lg .btn:not(.ghost):active {
-    background: none;
-    transform: none;
-  }
-  /* 上面的规则覆盖了 box-shadow，这里补回键盘焦点环以保留可达性 */
-  html.lg .btn:not(.ghost):focus-visible {
-    box-shadow: 0 0 0 3px rgba(124, 196, 255, 0.5);
   }
 </style>
 </head>
@@ -2040,7 +2024,5 @@
   // 本地还留着未过期的 token 时，直接回到应用界面
   restoreSession();
 </script>
-<!-- 液态玻璃叠加层：由 liquid-glass-webgl 打包而来，失败时静默跳过（页面回退到 CSS 外观） -->
-<script src="./liquid-glass-glass.js" defer></script>
 </body>
 </html>
