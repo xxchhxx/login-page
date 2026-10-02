@@ -260,10 +260,7 @@ app.use((_req, res, next) => {
     res.status(500).json({
       ok: false,
       message:
-        dbConfigError || '数据库连接失败，请检查 TURSO_DATABASE_URL / TURSO_AUTH_TOKEN 配置',
-      // 临时诊断：detail 是底层错误；tokenLength 用来判断函数读到的是新值还是旧值。定位完删除
-      detail: err.message,
-      tokenLength: String(ENV.TURSO_AUTH_TOKEN || '').length
+        dbConfigError || '数据库连接失败，请检查 TURSO_DATABASE_URL / TURSO_AUTH_TOKEN 配置'
     });
   });
 });
@@ -312,17 +309,7 @@ app.post('/api/send-code', async (req, res) => {
       console.error('[邮件发送失败]', err.message);
       return res.status(502).json({
         ok: false,
-        message: '验证码发送失败，请检查 SMTP 配置后重试',
-        // 临时诊断，定位完删除
-        detail: err.message,
-        code: err.code,
-        smtp: {
-          host: config.smtp.host,
-          port: config.smtp.port,
-          secure: config.smtp.secure,
-          userDomain: String(config.smtp.user || '').split('@')[1] || '',
-          passLength: String(config.smtp.pass || '').length
-        }
+        message: '验证码发送失败，请检查 SMTP 配置后重试'
       });
     }
   } else {
