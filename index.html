@@ -772,9 +772,10 @@
   const BACKEND_URL = '';
   const SAME_ORIGIN_HOSTS = ['localhost', '127.0.0.1', ''];
   const API_URL =
-    (SAME_ORIGIN_HOSTS.indexOf(location.hostname) !== -1 ? '' : BACKEND_URL) + '/api';
-  if (!BACKEND_URL && SAME_ORIGIN_HOSTS.indexOf(location.hostname) === -1) {
-    console.warn('[提示] 当前页面与后端不同源，且尚未配置 BACKEND_URL，/api 请求会打到静态站点而失败。');
+    (SAME_ORIGIN_HOSTS.indexOf(location.hostname) !== -1 || !BACKEND_URL ? '' : BACKEND_URL) + '/api';
+  // 只有在 GitHub Pages 这类纯静态站点上、又没配后端地址时才是真的配置错误
+  if (!BACKEND_URL && /\.github\.io$/.test(location.hostname)) {
+    console.warn('[提示] 页面在 GitHub Pages 上但未配置 BACKEND_URL，/api 请求会打到静态站点而失败。');
   }
 
   // ===== 背景星光：随机分布、错峰闪烁 =====
