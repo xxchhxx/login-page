@@ -613,6 +613,10 @@
   .stage { transition: width var(--dur-base) var(--ease-inout); }
   /* 桌面端放大：1200×720 的大卡片，窄屏自动收缩 */
   .stage.app { width: min(1200px, 96vw); height: min(720px, calc(100vh - 64px)); }
+  /* 移动端浏览器地址栏收展会让 100vh 失真（卡片底部被工具栏遮挡），dvh 才是可见高度 */
+  @supports (height: 100dvh) {
+    .stage.app { height: min(720px, calc(100dvh - 64px)); }
+  }
 
   .card-shell.hide { opacity: 0; pointer-events: none; }
 
@@ -738,10 +742,13 @@
   .app-shell.on .app-side > *:nth-child(2) { animation-delay: 0.06s; }
   .app-shell.on .app-side > *:nth-child(3) { animation-delay: 0.12s; }
 
-  /* --- 主区：动态页眉 + 内容 --- */
+  /* --- 主区：动态页眉 + 内容 ---
+     min-height:0 关键：≤900 折叠为纵向 flex 后，否则主区会被内容撑高、
+     溢出卡片底部且内容滚不到（手机端内容裁切 bug 的根源） */
   .app-main {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
   }
@@ -1133,19 +1140,22 @@
       border-right: none;
       border-bottom: 1px solid var(--divider);
     }
-    .side-brand { margin-bottom: 0; padding: 0; }
+    .side-brand { flex: none; margin-bottom: 0; padding: 0; }
     .side-brand .tt span { display: none; }
+    /* 关键：min-width:0 允许导航在窄屏收缩为横向滚动；
+       去掉 justify-content:flex-end —— flex-end 加溢出会把行首项推出可视区且滚不到，
+       改用 margin-left:auto 让整条导航靠右，内容不足时同样右对齐 */
     .app-nav {
       flex-direction: row;
-      flex: 1;
-      justify-content: flex-end;
+      flex: 0 1 auto;
+      min-width: 0;
       gap: 2px;
       margin-left: auto;
       overflow-x: auto;
       scrollbar-width: none;
     }
     .app-nav::-webkit-scrollbar { display: none; }
-    .app-tab { padding: 8px 12px; font-size: 13.5px; border-radius: 8px; }
+    .app-tab { flex: none; padding: 8px 12px; font-size: 13.5px; border-radius: 8px; }
     .side-user { display: none; }
     .app-topbar { display: none; }
     .app-body { padding: 24px 20px 30px; }
@@ -1164,6 +1174,8 @@
     .side-brand b { font-size: 14.5px; }
     .app-nav { gap: 1px; }
     .app-tab { padding: 8px 10px; font-size: 13px; }
+    /* 超窄屏品牌名可能仍放不下：允许换行前先收缩，避免挤压导航 */
+    .side-brand .tt { min-width: 0; }
     .app-body { padding: 18px 14px 24px; }
     .page-hd h3, .section-t h3 { font-size: 19px; }
     .page-hd p, .section-t p { font-size: 13px; }
