@@ -321,10 +321,18 @@
     flex-direction: column;
     min-width: 0;
   }
-  .seg-wrap { flex: none; padding: 26px 38px 0; }
+  .seg-wrap {
+    flex: none;
+    padding: 26px 38px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
   .seg {
     position: relative;
     display: flex;
+    flex: 1;
+    min-width: 0;
     padding: 4px;
     border-radius: 12px;
     background: var(--surface-2);
@@ -360,6 +368,23 @@
   .seg button:hover { color: var(--text-primary); }
   .seg button.on { color: var(--accent); }
   .seg button:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-soft); }
+  /* 语言切换：与分段切换器同高的小胶囊，按钮文案显示“目标语言” */
+  .lang-toggle {
+    flex: none;
+    height: 42px;
+    padding: 0 13px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-2);
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .lang-toggle:hover { color: var(--accent); border-color: var(--accent-soft); }
+  .lang-toggle:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-soft); }
   .auth-panels { position: relative; flex: 1; min-height: 0; }
 
   /* 分屏后各面板：品牌标题左对齐 + 副文案引导 */
@@ -550,6 +575,8 @@
   .btn:active { background: var(--accent-press); transform: scale(0.97); }
   .btn:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft); outline: none; }
   /* 提交等待中的旋转指示器：用 currentColor，主/次按钮都能复用 */
+  /* 加载中禁止换行，配合 withLoading 的宽度锁定，文案切换不会引起按钮跳动 */
+  .btn.loading { white-space: nowrap; }
   .btn.loading::before {
     content: "";
     display: inline-block;
@@ -703,7 +730,26 @@
     font-size: 12.5px;
     line-height: 1.55;
   }
-  .msg.show { display: flex; }
+  .msg.show {
+    display: flex;
+    animation: msg-in var(--dur-fast) var(--ease-out) both;
+  }
+  /* 已显示状态下切换内容：只做轻微淡入重放，不整块隐藏再出现（避免闪烁） */
+  .msg.show.swap { animation: msg-swap 0.22s var(--ease-out); }
+  /* 退出：先淡出，动画结束后再真正隐藏（见 setMsg） */
+  .msg.show.out { animation: msg-out 0.2s var(--ease-inout) both; pointer-events: none; }
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes msg-swap {
+    from { opacity: 0.35; }
+    to   { opacity: 1; }
+  }
+  @keyframes msg-out {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: translateY(-4px); }
+  }
   .msg svg { width: 15px; height: 15px; flex: none; margin-top: 1.5px; }
   .msg.err { color: var(--danger); background: var(--danger-soft); border-color: var(--danger-border); }
   .msg.ok  { color: var(--success); background: var(--success-soft); border-color: var(--success-border); }
@@ -1546,18 +1592,26 @@
   }
 
   /* ===== 登录成功后的公告弹窗 ===== */
+  /* 用 visibility + opacity 过渡代替 display 切换，遮罩与卡片都有平滑的进出场 */
   .modal-mask {
     position: fixed;
     inset: 0;
     z-index: 50;
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
     /* 仅压暗背景，不做毛玻璃模糊 */
     background: var(--scrim);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--dur-fast) var(--ease-out), visibility 0s linear var(--dur-fast);
   }
-  .modal-mask.open { display: flex; }
+  .modal-mask.open {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
 
   .modal-card {
     position: relative;
@@ -1569,16 +1623,18 @@
     background: var(--surface);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-2);
-    animation: modal-in var(--dur-fast) var(--ease-out) both;
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+    transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
     scrollbar-width: thin;
     scrollbar-color: var(--border-strong) transparent;
   }
+  .modal-mask.open .modal-card {
+    opacity: 1;
+    transform: none;
+  }
   .modal-card::-webkit-scrollbar { width: 6px; }
   .modal-card::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
-  @keyframes modal-in {
-    from { opacity: 0; transform: translateY(12px) scale(0.98); }
-    to   { opacity: 1; transform: none; }
-  }
 
   .modal-x {
     position: absolute;
@@ -1688,6 +1744,7 @@
             <button type="button" role="tab" data-goto="register" aria-selected="false">注册</button>
             <button type="button" role="tab" data-goto="about" aria-selected="false">关于</button>
           </div>
+          <button type="button" class="lang-toggle" id="btn-lang" aria-label="切换语言 / Switch language" title="切换语言 / Switch language">EN</button>
         </div>
 
         <div class="auth-panels">
@@ -1722,7 +1779,7 @@
             <label class="check">
               <input type="checkbox" id="remember">
               <span class="box"></span>
-              记住我
+              <span class="check-tx">记住我</span>
             </label>
             <button type="button" class="link" id="btn-forgot">忘记密码?</button>
           </div>
@@ -1735,11 +1792,11 @@
 
           <button class="btn ghost github-btn" type="button" id="btn-github" title="使用 GitHub 账号授权登录">
             <svg class="github-ic" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-            GitHub 登录
+            <span class="github-tx">GitHub 登录</span>
           </button>
 
           <div class="switch-hint">
-            还没有账户?
+            <span class="hint-tx">还没有账户?</span>
             <button type="button" data-goto="register">注册</button>
             <span class="dot">·</span>
             <button type="button" data-goto="about">关于我们</button>
@@ -1800,7 +1857,7 @@
           <button class="btn" type="button" id="btn-register">注册</button>
 
           <div class="switch-hint">
-            已有账户?
+            <span class="hint-tx">已有账户?</span>
             <button type="button" data-goto="login">登录</button>
             <span class="dot">·</span>
             <button type="button" data-goto="about">关于我们</button>
@@ -2431,7 +2488,7 @@
       const show = input.type === 'password';
       input.type = show ? 'text' : 'password';
       btn.classList.toggle('on', show);
-      btn.setAttribute('aria-label', show ? '隐藏密码' : '显示密码');
+      btn.setAttribute('aria-label', show ? t('hidePwd') : t('showPwd'));
     });
   });
 
@@ -2439,8 +2496,8 @@
   document.getElementById('btn-forgot').addEventListener('click', () => {
     const mail = document.getElementById('login-mail').value.trim();
     setMsg('login-msg', 'info', mail
-      ? '如需重置 ' + mail + ' 的密码，请发送邮件至 a13828563360@163.com，我们会在 1–2 个工作日内处理。'
-      : '当前版本暂未开放自助找回，请发送邮件至 a13828563360@163.com 与我们联系。');
+      ? t('forgotMail', { s: mail })
+      : t('forgotNoMail'));
   });
 
   // 注册密码实时强度提示：三段式强度条 + 文案
@@ -2453,11 +2510,11 @@
     if (/[A-Za-z]/.test(v) && /\d/.test(v)) score++;
     if (/[^A-Za-z0-9\s]/.test(v) || v.length >= 14) score++;
     pwdMeter.className = 'pwd-meter' + (v ? ' l' + Math.max(1, score) : '');
-    pwdHint.textContent = !v ? '至少 8 位，建议混合字母与数字'
-      : score === 0 ? '强度不足：至少 8 位'
-      : score === 1 ? '强度：一般'
-      : score === 2 ? '强度：良好'
-      : '强度：很强';
+    pwdHint.textContent = !v ? t('pwdDefault')
+      : score === 0 ? t('pwdWeak')
+      : score === 1 ? t('pwdFair')
+      : score === 2 ? t('pwdGood')
+      : t('pwdStrong');
   });
 
   // ===== 与后端接口通信 =====
@@ -2469,15 +2526,33 @@
   };
 
   // 显示 / 清除表单提示；提示会改变面板高度，需重新测量卡片高度
+  // 入场淡入下移；已显示时切换内容只做轻微淡入；清除时先淡出再隐藏，避免生硬闪烁
   function setMsg(id, type, text) {
     const el = document.getElementById(id);
+    const wasShown = el.classList.contains('show');
     if (!text) {
-      el.className = 'msg';
-      el.textContent = '';
-    } else {
-      el.className = 'msg show ' + type;
-      el.innerHTML = ICON[type] + '<span></span>';
-      el.querySelector('span').textContent = text; // 用 textContent 写入，避免 XSS
+      if (!wasShown) return;
+      el.classList.remove('swap');
+      el.classList.add('out');
+      el.addEventListener('animationend', () => {
+        el.className = 'msg';
+        el.removeAttribute('data-type');
+        el.textContent = '';
+        sizeShell();
+      }, { once: true });
+      return;
+    }
+    const span = el.querySelector('span');
+    if (wasShown && el.getAttribute('data-type') === type && span && span.textContent === text) return;
+    el.className = 'msg show ' + type;
+    el.setAttribute('data-type', type);
+    el.innerHTML = ICON[type] + '<span></span>';
+    el.querySelector('span').textContent = text; // 用 textContent 写入，避免 XSS
+    if (wasShown) {
+      // 已显示状态下切换内容：重启轻微淡入动画（不经过 display:none，无闪烁）
+      el.classList.remove('swap');
+      void el.offsetWidth; // 强制回流，确保动画可重放
+      el.classList.add('swap');
     }
     sizeShell();
   }
@@ -2491,24 +2566,27 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok && !data.message) {
-        data.message = '接口请求失败（HTTP ' + res.status + '），请检查后端地址是否正确';
+        data.message = t('apiHttp', { s: res.status });
       }
       return { ok: res.ok, data };
     } catch {
-      return { ok: false, data: { message: '无法连接服务器，请确认后端已启动并可公网访问' } };
+      return { ok: false, data: { message: t('apiConn') } };
     }
   }
 
   // 提交按钮的加载态包装：禁用 + 文案 + 旋转指示器
+  // 加载期间锁定按钮当前宽度，文案变化与指示器加入都不会引起宽度跳动
   async function withLoading(btn, text, fn) {
     const original = btn.textContent;
     btn.disabled = true;
+    btn.style.width = btn.getBoundingClientRect().width + 'px';
     btn.textContent = text;
     btn.classList.add('loading');
     try { await fn(); } finally {
       btn.disabled = false;
       btn.textContent = original;
       btn.classList.remove('loading');
+      btn.style.width = '';
     }
   }
 
@@ -2536,33 +2614,33 @@
   function startCooldown(seconds) {
     let left = seconds;
     sendBtn.disabled = true;
-    sendBtn.textContent = left + 's 后重发';
+    sendBtn.textContent = t('resendIn', { s: left });
     clearInterval(cooldownTimer);
     cooldownTimer = setInterval(() => {
       left -= 1;
       if (left <= 0) {
         clearInterval(cooldownTimer);
         sendBtn.disabled = false;
-        sendBtn.textContent = '获取验证码';
+        sendBtn.textContent = t('sendCode');
       } else {
-        sendBtn.textContent = left + 's 后重发';
+        sendBtn.textContent = t('resendIn', { s: left });
       }
     }, 1000);
   }
 
   sendBtn.addEventListener('click', async () => {
     const email = document.getElementById('reg-mail').value.trim();
-    if (!EMAIL_RE.test(email)) return setMsg('reg-msg', 'err', '请先填写有效的邮箱地址');
+    if (!EMAIL_RE.test(email)) return setMsg('reg-msg', 'err', t('errSendEmail'));
 
     sendBtn.disabled = true;
-    sendBtn.textContent = '发送中…';
+    sendBtn.textContent = t('sending');
     setMsg('reg-msg', '', '');
     const { ok, data } = await api('/send-code', { email });
 
     if (!ok) {
       sendBtn.disabled = false;
-      sendBtn.textContent = '获取验证码';
-      return setMsg('reg-msg', 'err', data.message || '验证码发送失败');
+      sendBtn.textContent = t('sendCode');
+      return setMsg('reg-msg', 'err', data.message || t('errSendFail'));
     }
     startCooldown(data.cooldown || 60);
     setMsg('reg-msg', 'ok', data.message);
@@ -2570,23 +2648,23 @@
 
   // ----- 注册 -----
   document.getElementById('btn-register').addEventListener('click', (e) => {
-    withLoading(e.currentTarget, '注册中…', async () => {
+    withLoading(e.currentTarget, t('signingUp'), async () => {
       const username = document.getElementById('reg-user').value.trim();
       const email = document.getElementById('reg-mail').value.trim();
       const code = document.getElementById('reg-code').value.trim();
       const password = document.getElementById('reg-pwd').value;
 
-      if (username.length < 2 || username.length > 20) return setMsg('reg-msg', 'err', '用户名长度需为 2–20 个字符');
-      if (!EMAIL_RE.test(email)) return setMsg('reg-msg', 'err', '请输入有效的邮箱地址');
-      if (!/^\d{6}$/.test(code)) return setMsg('reg-msg', 'err', '请输入 6 位数字验证码');
-      if (password.length < 8) return setMsg('reg-msg', 'err', '密码至少需要 8 位');
+      if (username.length < 2 || username.length > 20) return setMsg('reg-msg', 'err', t('errNameLen'));
+      if (!EMAIL_RE.test(email)) return setMsg('reg-msg', 'err', t('errEmail'));
+      if (!/^\d{6}$/.test(code)) return setMsg('reg-msg', 'err', t('errCode'));
+      if (password.length < 8) return setMsg('reg-msg', 'err', t('errPwdLen'));
 
       setMsg('reg-msg', '', '');
       const { ok, data } = await api('/register', { username, email, code, password });
-      if (!ok) return setMsg('reg-msg', 'err', data.message || '注册失败');
+      if (!ok) return setMsg('reg-msg', 'err', data.message || t('regFail'));
 
       saveToken(data.token);
-      setMsg('reg-msg', 'ok', '注册成功，欢迎你 ' + data.user.username + '！');
+      setMsg('reg-msg', 'ok', t('regOk', { s: data.user.username }));
 
       // 注册即已登录：预填登录邮箱（退出后可直接登录），稍后进入应用界面
       document.getElementById('login-mail').value = email;
@@ -2600,16 +2678,16 @@
 
   // ----- 登录 -----
   document.getElementById('btn-login').addEventListener('click', (e) => {
-    withLoading(e.currentTarget, '登录中…', async () => {
+    withLoading(e.currentTarget, t('signingIn'), async () => {
       const email = document.getElementById('login-mail').value.trim();
       const password = document.getElementById('login-pwd').value;
 
-      if (!EMAIL_RE.test(email)) return setMsg('login-msg', 'err', '请输入有效的邮箱地址');
-      if (!password) return setMsg('login-msg', 'err', '请输入密码');
+      if (!EMAIL_RE.test(email)) return setMsg('login-msg', 'err', t('errEmail'));
+      if (!password) return setMsg('login-msg', 'err', t('errPwd'));
 
       setMsg('login-msg', '', '');
       const { ok, data } = await api('/login', { email, password });
-      if (!ok) return setMsg('login-msg', 'err', data.message || '登录失败');
+      if (!ok) return setMsg('login-msg', 'err', data.message || t('loginFail'));
 
       saveToken(data.token);
       setMsg('login-msg', '', '');
@@ -2645,19 +2723,19 @@
     localStorage.removeItem(GITHUB_STATE_KEY);
 
     if (d.error) {
-      setMsg('login-msg', 'err', d.error === 'access_denied' ? '你已取消 GitHub 授权，可随时重新登录' : 'GitHub 授权失败：' + d.error);
+      setMsg('login-msg', 'err', d.error === 'access_denied' ? t('ghCancel') : t('ghFail', { s: d.error }));
       return;
     }
-    if (!d.code) { setMsg('login-msg', 'err', '未收到 GitHub 授权码，请重新登录'); return; }
+    if (!d.code) { setMsg('login-msg', 'err', t('ghNoCode')); return; }
     if (!d.state || d.state !== expected) {
-      setMsg('login-msg', 'err', '授权状态校验失败，请重新发起授权登录');
+      setMsg('login-msg', 'err', t('ghStateBad'));
       return;
     }
 
-    withLoading(btnGithub, '登录中…', async () => {
+    withLoading(btnGithub, t('signingIn'), async () => {
       const { ok, data } = await api('/github/exchange', { code: d.code, state: d.state });
       if (!ok) {
-        setMsg('login-msg', 'err', data.message || 'GitHub 登录失败，请稍后重试');
+        setMsg('login-msg', 'err', data.message || t('ghExchange'));
         return;
       }
       saveToken(data.token);
@@ -2669,18 +2747,18 @@
   btnGithub.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     // 同源校验后打开授权窗口；用户在 GitHub 授权页确认后自动回调
-    setMsg('login-msg', 'info', '正在打开 GitHub 授权窗口…');
+    setMsg('login-msg', 'info', t('ghOpening'));
 
     let res, data;
     try {
       res = await fetch(API_URL + '/github/start');
       data = await res.json().catch(() => ({}));
     } catch {
-      setMsg('login-msg', 'err', '无法连接服务器，请确认后端已启动并可公网访问');
+      setMsg('login-msg', 'err', t('apiConn'));
       return;
     }
     if (!res.ok || !data.ok || !data.url) {
-      setMsg('login-msg', 'err', data.message || 'GitHub 登录暂不可用，请稍后再试');
+      setMsg('login-msg', 'err', data.message || t('ghDown'));
       return;
     }
 
@@ -2699,7 +2777,7 @@
     );
     if (!githubWin) {
       localStorage.removeItem(GITHUB_STATE_KEY);
-      setMsg('login-msg', 'err', '授权窗口被浏览器拦截，请允许本站弹窗后重试');
+      setMsg('login-msg', 'err', t('ghBlocked'));
       return;
     }
 
@@ -2710,7 +2788,7 @@
         githubDone = true;
         githubCleanup();
         localStorage.removeItem(GITHUB_STATE_KEY);
-        setMsg('login-msg', 'info', '已取消 GitHub 登录');
+        setMsg('login-msg', 'info', t('ghCanceled'));
       }
     }, 500);
   });
@@ -2935,6 +3013,175 @@
     showNotice();
   });
 
+  // ===== 语言切换（登录界面）：中文 / English =====
+  // 首次访问按浏览器语言自动检测：中文环境用中文，其余地区一律英文；
+  // 手动切换后存入 ch-music-prefs.lang，优先级高于自动检测。
+  let lang = 'zh';
+  const LANGS = ['zh', 'en'];
+
+  // 动态字符串字典：key => [中文, English]，{s} 为占位符
+  const STR = {
+    pageTitle:     ['CH music · 登录', 'CH music · Sign in'],
+    // 表单校验
+    errEmail:      ['请输入有效的邮箱地址', 'Please enter a valid email address'],
+    errPwd:        ['请输入密码', 'Please enter your password'],
+    loginFail:     ['登录失败', 'Sign-in failed'],
+    errNameLen:    ['用户名长度需为 2–20 个字符', 'Username must be 2–20 characters'],
+    errCode:       ['请输入 6 位数字验证码', 'Enter the 6-digit verification code'],
+    errPwdLen:     ['密码至少需要 8 位', 'Password must be at least 8 characters'],
+    regFail:       ['注册失败', 'Registration failed'],
+    regOk:         ['注册成功，欢迎你 {s}！', 'Welcome aboard, {s}!'],
+    errSendEmail:  ['请先填写有效的邮箱地址', 'Enter a valid email address first'],
+    errSendFail:   ['验证码发送失败', 'Failed to send the code'],
+    // 网络
+    apiHttp:       ['接口请求失败（HTTP {s}），请检查后端地址是否正确', 'Request failed (HTTP {s}). Please check the backend URL'],
+    apiConn:       ['无法连接服务器，请确认后端已启动并可公网访问', "Can't reach the server. Make sure the backend is running and publicly accessible"],
+    // 加载 / 倒计时
+    signingIn:     ['登录中…', 'Signing in…'],
+    signingUp:     ['注册中…', 'Signing up…'],
+    sending:       ['发送中…', 'Sending…'],
+    sendCode:      ['获取验证码', 'Get code'],
+    resendIn:      ['{s}s 后重发', 'Resend in {s}s'],
+    // 密码强度
+    pwdDefault:    ['至少 8 位，建议混合字母与数字', 'At least 8 characters; mix letters and numbers'],
+    pwdWeak:       ['强度不足：至少 8 位', 'Too weak: at least 8 characters'],
+    pwdFair:       ['强度：一般', 'Strength: Fair'],
+    pwdGood:       ['强度：良好', 'Strength: Good'],
+    pwdStrong:     ['强度：很强', 'Strength: Strong'],
+    // 忘记密码
+    forgotMail:    ['如需重置 {s} 的密码，请发送邮件至 a13828563360@163.com，我们会在 1–2 个工作日内处理。', "To reset the password for {s}, email a13828563360@163.com and we'll handle it within 1–2 business days."],
+    forgotNoMail:  ['当前版本暂未开放自助找回，请发送邮件至 a13828563360@163.com 与我们联系。', "Self-service recovery isn't available yet. Email a13828563360@163.com to reach us."],
+    // GitHub 流程
+    ghOpening:     ['正在打开 GitHub 授权窗口…', 'Opening the GitHub authorization window…'],
+    ghCancel:      ['你已取消 GitHub 授权，可随时重新登录', 'GitHub authorization cancelled — you can sign in again anytime'],
+    ghFail:        ['GitHub 授权失败：{s}', 'GitHub authorization failed: {s}'],
+    ghNoCode:      ['未收到 GitHub 授权码，请重新登录', 'No authorization code received. Please try again.'],
+    ghStateBad:    ['授权状态校验失败，请重新发起授权登录', 'State verification failed. Please start the authorization again.'],
+    ghExchange:    ['GitHub 登录失败，请稍后重试', 'GitHub sign-in failed. Please try again later.'],
+    ghDown:        ['GitHub 登录暂不可用，请稍后再试', 'GitHub sign-in is unavailable right now. Try again later.'],
+    ghBlocked:     ['授权窗口被浏览器拦截，请允许本站弹窗后重试', 'The popup was blocked. Allow popups for this site and try again.'],
+    ghCanceled:    ['已取消 GitHub 登录', 'GitHub sign-in cancelled'],
+    // 控件
+    showPwd:       ['显示密码', 'Show password'],
+    hidePwd:       ['隐藏密码', 'Hide password']
+  };
+
+  function t(key, rep) {
+    const pair = STR[key];
+    let s = pair ? (pair[LANGS.indexOf(lang)] || pair[0]) : key;
+    if (rep) for (const k in rep) s = s.split('{' + k + '}').join(rep[k]);
+    return s;
+  }
+
+  // 静态文案替换表：[选择器, 属性（'' = textContent，'html' = innerHTML，其它 = setAttribute）, 中文, English]
+  const DOM_MAP = [
+    // 品牌板
+    ['.auth-tag', '', 'v1.4.0 界面焕新', 'v1.4.0 Fresh Look'],
+    ['.auth-title', 'html', '更清晰、更专注的<br><em>音乐播放器</em>体验', 'A clearer, more focused<br><em>music player</em>'],
+    ['.auth-desc', '', '移除所有视觉噪音，纯色界面让内容回到主角位置。深浅色主题跟随系统设置自动切换，任何时刻都清晰可读。', 'No visual noise — a solid, focused interface that puts your music front and center. Light and dark themes follow your system automatically and stay readable at all times.'],
+    ['.auth-stats div:nth-child(1) span', '', '用户评分', 'User rating'],
+    ['.auth-stats div:nth-child(2) span', '', '累计下载', 'Downloads'],
+    ['.auth-stats div:nth-child(3) span', '', '全程流畅', 'Silky smooth'],
+    // 分段切换器
+    ['#auth-seg', 'aria-label', '面板切换', 'Switch panels'],
+    ['#auth-seg [data-goto="login"]', '', '登录', 'Sign in'],
+    ['#auth-seg [data-goto="register"]', '', '注册', 'Sign up'],
+    ['#auth-seg [data-goto="about"]', '', '关于', 'About'],
+    // 登录面板
+    ['#panel-login .brand h1', '', '欢迎回来', 'Welcome back'],
+    ['#panel-login .brand .sub', '', '登录以同步你的收藏与播放列表', 'Sign in to sync your favorites and playlists'],
+    ['label[for="login-mail"]', '', '邮箱', 'Email'],
+    ['#login-mail', 'placeholder', '请输入邮箱', 'Enter your email'],
+    ['label[for="login-pwd"]', '', '密码', 'Password'],
+    ['#login-pwd', 'placeholder', '请输入密码', 'Enter your password'],
+    ['.showpwd[data-target="login-pwd"]', 'aria-label', '显示密码', 'Show password'],
+    ['#panel-login .check .check-tx', '', '记住我', 'Remember me'],
+    ['#btn-forgot', '', '忘记密码?', 'Forgot password?'],
+    ['#btn-login', '', '登录', 'Sign in'],
+    ['#panel-login .alt-divider', 'aria-label', '其他登录方式', 'Other ways to sign in'],
+    ['#panel-login .alt-divider span', '', '或', 'or'],
+    ['#btn-github', 'title', '使用 GitHub 账号授权登录', 'Authorize with your GitHub account'],
+    ['#btn-github .github-tx', '', 'GitHub 登录', 'Sign in with GitHub'],
+    ['#panel-login .switch-hint .hint-tx', '', '还没有账户?', 'No account yet?'],
+    ['#panel-login .switch-hint [data-goto="register"]', '', '注册', 'Sign up'],
+    ['#panel-login .switch-hint [data-goto="about"]', '', '关于我们', 'About us'],
+    // 注册面板
+    ['#panel-register .brand h1', '', '创建账户', 'Create an account'],
+    ['#panel-register .brand .sub', '', '几分钟完成注册，收藏与歌单云端同步', 'Sign up in minutes — favorites and playlists sync to the cloud'],
+    ['label[for="reg-user"]', '', '用户名', 'Username'],
+    ['#reg-user', 'placeholder', '2–20 个字符', '2–20 characters'],
+    ['label[for="reg-mail"]', '', '邮箱', 'Email'],
+    ['#reg-mail', 'placeholder', '请输入邮箱', 'Enter your email'],
+    ['label[for="reg-code"]', '', '邮箱验证码', 'Verification code'],
+    ['#reg-code', 'placeholder', '6 位数字验证码', '6-digit code'],
+    ['#btn-send-code', '', '获取验证码', 'Get code'],
+    ['label[for="reg-pwd"]', '', '密码', 'Password'],
+    ['#reg-pwd', 'placeholder', '请设置密码（至少 8 位）', 'Set a password (at least 8 characters)'],
+    ['.showpwd[data-target="reg-pwd"]', 'aria-label', '显示密码', 'Show password'],
+    ['#pwd-hint', '', '至少 8 位，建议混合字母与数字', 'At least 8 characters; mix letters and numbers'],
+    ['#btn-register', '', '注册', 'Sign up'],
+    ['#panel-register .switch-hint .hint-tx', '', '已有账户?', 'Already have an account?'],
+    ['#panel-register .switch-hint [data-goto="login"]', '', '登录', 'Sign in'],
+    ['#panel-register .switch-hint [data-goto="about"]', '', '关于我们', 'About us'],
+    // 关于面板（公告条目）
+    ['#panel-about .brand h1', '', '关于我们', 'About us'],
+    ['#panel-about .brand .sub', '', '平台公告与更新', 'News & updates'],
+    ['#panel-about .notice:nth-child(1) .tag', '', '最新', 'Latest'],
+    ['#panel-about .notice:nth-child(1) h3', '', 'v1.4.0 更新发布', 'v1.4.0 Released'],
+    ['#panel-about .notice:nth-child(1) p', '', '登录后主界面全新重构：采用侧边栏导航与动态页眉布局，层级更清晰、操作更高效；同时修复手机端内容溢出、导航被裁切与底部遮挡的问题，排版细节全面优化。', 'The main interface has been fully rebuilt after sign-in: sidebar navigation with a dynamic header for a clearer hierarchy and faster operation. Also fixes mobile content overflow, clipped navigation, and bottom occlusion, with typography refined throughout.'],
+    ['#panel-about .notice:nth-child(2) h3', '', 'v1.3.0 更新发布', 'v1.3.0 Released'],
+    ['#panel-about .notice:nth-child(2) p', '', '界面全面改版：移除毛玻璃与半透明效果，统一改为纯色背景设计；主题跟随系统设置自动切换，浅色与深色模式下均保持清晰对比；并统一卡片、按钮与表单的描边和阴影规范。登录后会自动弹出本次更新公告，可勾选「可不再提示」。', "Complete visual overhaul: frosted glass and translucency removed in favor of solid backgrounds; the theme follows your system automatically and keeps clear contrast in both light and dark modes; unified borders and shadows for cards, buttons, and forms. The update notice pops up automatically after sign-in, with a 'Don't show again' option."],
+    ['#panel-about .notice:nth-child(3) .tag', '', '置顶', 'Pinned'],
+    ['#panel-about .notice:nth-child(3) h3', '', '系统维护通知', 'Scheduled Maintenance'],
+    ['#panel-about .notice:nth-child(3) p', '', '10 月 3 日 02:00–04:00 进行例行维护，期间登录与注册可能短暂不可用，请提前安排。', 'Routine maintenance on Oct 3, 02:00–04:00. Sign-in and registration may be briefly unavailable. Please plan ahead.'],
+    ['#panel-about .notice:nth-child(4) .tag', '', '新版本', 'New version'],
+    ['#panel-about .notice:nth-child(4) h3', '', 'v1.2.0 更新发布', 'v1.2.0 Released'],
+    ['#panel-about .notice:nth-child(4) p', '', '新增登录保护与设备管理，优化注册流程；修复部分设备上密码可见性切换异常的问题。', 'Added sign-in protection and device management, and improved the registration flow; fixed password visibility toggle issues on some devices.'],
+    ['#panel-about .notice:nth-child(5) h3', '', '隐私政策更新', 'Privacy Policy Update'],
+    ['#panel-about .notice:nth-child(5) p', '', '我们更新了隐私政策中关于数据存储与账号注销的说明，继续使用即表示您已知悉并同意。', "We updated the data storage and account deletion sections of our privacy policy. Continued use means you acknowledge and agree."],
+    ['#panel-about .notice:nth-child(6) h3', '', '欢迎使用', 'Welcome'],
+    ['#panel-about .notice:nth-child(6) p', '', '感谢你的到来。账号相关问题可通过页面底部的联系方式与我们取得联系。', 'Thanks for coming. For account issues, reach us via the contact info at the bottom of the page.'],
+    ['#panel-about .switch-hint [data-goto="login"]', '', '返回登录', 'Back to sign in'],
+    ['#panel-about .switch-hint [data-goto="register"]', '', '注册账户', 'Create account']
+  ];
+
+  // 把当前语言应用到登录界面的所有静态文案
+  function applyLang() {
+    const i = LANGS.indexOf(lang);
+    DOM_MAP.forEach(([sel, attr, zh, en]) => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      const val = i === 0 ? zh : en;
+      if (attr === '') el.textContent = val;
+      else if (attr === 'html') el.innerHTML = val;
+      else el.setAttribute(attr, val);
+    });
+    document.title = t('pageTitle');
+    document.documentElement.lang = i === 0 ? 'zh-CN' : 'en';
+    const btn = document.getElementById('btn-lang');
+    if (btn) btn.textContent = i === 0 ? 'EN' : '中文';
+  }
+
+  // 首次访问：浏览器语言以 zh 开头视为中文环境，其余一律英文
+  function detectLang() {
+    const saved = loadPrefs().lang;
+    if (saved === 'zh' || saved === 'en') return saved;
+    const list = [navigator.language].concat(navigator.languages || []);
+    return list.some((l) => String(l || '').toLowerCase().indexOf('zh') === 0) ? 'zh' : 'en';
+  }
+
+  function initLang() {
+    lang = detectLang();
+    applyLang();
+    document.getElementById('btn-lang').addEventListener('click', () => {
+      lang = lang === 'zh' ? 'en' : 'zh';
+      prefs.lang = lang;
+      savePrefs(prefs);
+      applyLang();
+      sizeShell(); // 中英文案长度不同，重新测量卡片高度
+    });
+  }
+
   // 进入应用界面：登录 / 注册 / 刷新恢复 三条路径共用
   function enterApp(data) {
     const u = data.user || {};
@@ -3026,6 +3273,7 @@
   });
 
   // 初始化：测量高度、对齐分段切换器；等字体加载完成、窗口尺寸变化后再校正
+  initLang(); // 语言切换：自动检测地区（非中文环境默认英文）或读取手动选择
   sizeShell();
   updateSeg();
   if (document.fonts?.ready) {

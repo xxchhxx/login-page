@@ -101,6 +101,28 @@
       var state = qs.get('state') || '';
       var error = qs.get('error') || qs.get('error_description') || '';
 
+      // 与主页面共用语言偏好：zh = 中文，其余一律英文
+      var saved = {};
+      try { saved = JSON.parse(localStorage.getItem('ch-music-prefs') || '{}') || {}; } catch (e) { saved = {}; }
+      var en = saved.lang === 'en';
+      var TXT = en ? {
+        title: document.title.replace('GitHub 登录回调', 'GitHub Sign-in Callback'),
+        waitT: 'Returning to sign-in…',
+        waitD: 'GitHub authorization received — passing it back to the main window',
+        tip: 'Window didn\u2019t close automatically?',
+        tipBtn: 'Close it',
+        noOpenT: "Couldn't complete sign-in",
+        noOpenD: 'Start again from "Sign in with GitHub" on the sign-in page',
+        brokenT: 'Sign-in interrupted',
+        brokenD: "Couldn't pass the result back to the main window. Please start again.",
+        errT: 'Authorization incomplete',
+        cancelD: 'You cancelled GitHub authorization. You can sign in again anytime.',
+        ghErrD: 'GitHub returned an error: ',
+        noCodeD: 'No authorization code received. Please sign in again.',
+        okT: 'Authorized',
+        okD: 'Closing this window — continue in the main window.'
+      } : null; // 中文直接用页面原文
+
       function show(type, title, desc) {
         document.getElementById('icon').className = 'icon ' + type;
         document.getElementById('i-wait').style.display = 'none';
@@ -108,12 +130,21 @@
         document.getElementById('i-err').style.display = type === 'err' ? '' : 'none';
         document.getElementById('title').textContent = title;
         document.getElementById('desc').textContent = desc;
-        document.getElementById('tip').hidden = type === 'wait';
+        var tip = document.getElementById('tip');
+        tip.childNodes[0].nodeValue = TXT ? TXT.tip : '窗口未自动关闭？';
+        tip.hidden = type === 'wait';
+      }
+
+      if (TXT) {
+        document.title = TXT.title;
+        document.getElementById('title').textContent = TXT.waitT;
+        document.getElementById('desc').textContent = TXT.waitD;
+        document.querySelector('#tip button').textContent = TXT.tipBtn;
       }
 
       // 没有 opener（用户直接打开了本页）或参数为空，直接报错，不空转
       if (!window.opener || window.opener === window) {
-        show('err', '无法完成登录', '请从登录页的「GitHub 登录」重新发起授权');
+        show('err', TXT ? TXT.noOpenT : '无法完成登录', TXT ? TXT.noOpenD : '请从登录页的「GitHub 登录」重新发起授权');
         return;
       }
 
@@ -123,20 +154,23 @@
         // 只允许同源主页面接收，避免把授权码泄漏给其它站点
         window.opener.postMessage(payload, window.location.origin);
       } catch (e) {
-        show('err', '登录中断', '无法把授权结果传回主窗口，请重新发起授权登录');
+        show('err', TXT ? TXT.brokenT : '登录中断', TXT ? TXT.brokenD : '无法把授权结果传回主窗口，请重新发起授权登录');
         return;
       }
 
       if (error) {
-        show('err', '授权未完成', error === 'access_denied' ? '你已取消 GitHub 授权，可随时重新登录' : 'GitHub 返回了错误：' + error);
+        show('err', TXT ? TXT.errT : '授权未完成',
+          error === 'access_denied'
+            ? (TXT ? TXT.cancelD : '你已取消 GitHub 授权，可随时重新登录')
+            : (TXT ? TXT.ghErrD + error : 'GitHub 返回了错误：' + error));
         return;
       }
       if (!code) {
-        show('err', '授权未完成', '未收到 GitHub 授权码，请重新登录');
+        show('err', TXT ? TXT.errT : '授权未完成', TXT ? TXT.noCodeD : '未收到 GitHub 授权码，请重新登录');
         return;
       }
 
-      show('ok', '授权成功', '正在关闭本窗口，请在主页面继续…');
+      show('ok', TXT ? TXT.okT : '授权成功', TXT ? TXT.okD : '正在关闭本窗口，请在主页面继续…');
       // 留一点时间让用户看到提示，然后自动关闭
       setTimeout(function () { window.close(); }, 600);
     })();
