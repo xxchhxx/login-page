@@ -8,17 +8,56 @@
   /* ===== 基础重置 ===== */
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  /* ===== 主题变量：默认浅色，随系统设置自动切换深色 ===== */
   :root {
+    color-scheme: light dark;
+
+    /* 主色（品牌蓝） */
     --accent: #0078D4;
     --accent-hover: #106EBE;
     --accent-press: #005A9E;
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.68);
-    --stroke: rgba(255, 255, 255, 0.24);
-    --stroke-strong: rgba(255, 255, 255, 0.42);
-    /* 玻璃层：外层底色 + 内层高光 */
-    --glass-tint: rgba(255, 255, 255, 0.13);
-    --glass-tint-2: rgba(255, 255, 255, 0.05);
+    --accent-soft: #e5f1fb;
+    --on-accent: #ffffff;
+    /* 图标底色：承载白色图标的实色块，两种主题下都保持足够对比 */
+    --icon-bg: #0078D4;
+
+    /* 次级强调色（青） */
+    --accent-2: #057a94;
+    --on-accent-2: #ffffff;
+
+    /* 页面与表面：全部为纯色，不使用半透明 / 模糊 */
+    --bg: #eef1f6;
+    --surface: #ffffff;
+    --surface-2: #f4f6f9;
+    --surface-3: #e8ecf1;
+    --surface-sunken: #e3e7ed;
+
+    /* 文字 */
+    --text-primary: #14181d;
+    --text-secondary: #5b6472;
+    --text-muted: #8a93a1;
+    --link: #0067c0;
+
+    /* 描边与分隔 */
+    --border: #d5dae1;
+    --border-strong: #b3bbc6;
+    --divider: #e4e8ee;
+
+    /* 阴影：用纯色分层表现高度，不依赖模糊背景 */
+    --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10);
+    --shadow-2: 0 10px 28px -12px rgba(16, 24, 40, 0.28), 0 2px 8px rgba(16, 24, 40, 0.10);
+
+    /* 语义色 */
+    --danger: #c62828;
+    --danger-soft: #fdecec;
+    --danger-border: #f0b5b5;
+    --success: #0e7a34;
+    --success-soft: #e6f5ea;
+    --success-border: #a6d5b6;
+    --warn: #8a6d00;
+    --warn-soft: #fdf4e0;
+    --warn-border: #e6cf95;
+
     --radius-lg: 20px;
     --radius-md: 10px;
     --radius-sm: 6px;
@@ -28,6 +67,49 @@
     --space-3: 20px;
     --space-4: 32px;
     --font: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  /* ===== 深色模式：跟随系统设置 ===== */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --accent: #2b9bf4;
+      --accent-hover: #57b3f8;
+      --accent-press: #1a86dc;
+      --accent-soft: #12293d;
+      --on-accent: #06131f;
+      --icon-bg: #1173cf;
+
+      --accent-2: #3ed0e8;
+      --on-accent-2: #04171d;
+
+      --bg: #0e1013;
+      --surface: #1b1e23;
+      --surface-2: #23272d;
+      --surface-3: #2c3138;
+      --surface-sunken: #15181c;
+
+      --text-primary: #f2f4f7;
+      --text-secondary: #a9b2bd;
+      --text-muted: #79838f;
+      --link: #6cb8ff;
+
+      --border: #363c44;
+      --border-strong: #4c545e;
+      --divider: #2a2f36;
+
+      --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.45);
+      --shadow-2: 0 12px 32px -12px rgba(0, 0, 0, 0.75), 0 2px 8px rgba(0, 0, 0, 0.55);
+
+      --danger: #ff8a8d;
+      --danger-soft: #3a1d1f;
+      --danger-border: #6b3235;
+      --success: #74dd8c;
+      --success-soft: #16301b;
+      --success-border: #2f5a38;
+      --warn: #ffd47a;
+      --warn-soft: #33291a;
+      --warn-border: #5e4a22;
+    }
   }
 
   html { height: 100%; }
@@ -43,200 +125,32 @@
     -webkit-font-smoothing: antialiased;
     display: grid;
     place-items: center;
-    background: radial-gradient(120% 120% at 12% 8%, #7ea6e8 0%, #4c7fd6 26%, #2b5fc4 52%, #16356a 80%, #0a1f42 100%);
-    background-attachment: fixed;
+    /* 纯色背景：不使用渐变 / 光斑 / 模糊 */
+    background: var(--bg);
+    transition: background 0.25s ease, color 0.25s ease;
   }
 
-  /* ===== 背景漂浮光斑（Acrylic 背景氛围） ===== */
-  .bg {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
-    z-index: 0;
-  }
-  .bg::before {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 85vmax;
-    height: 85vmax;
-    transform: translate(-50%, -50%);
-    background:
-      radial-gradient(circle at 25% 25%, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0) 45%),
-      radial-gradient(circle at 75% 65%, rgba(94, 181, 255, 0.55) 0%, rgba(94,181,255,0) 40%),
-      radial-gradient(circle at 70% 15%, rgba(166, 130, 255, 0.5) 0%, rgba(166,130,255,0) 38%);
-    filter: blur(6px);
-  }
-  /* 玻璃质感需要背景有“可被模糊的细节”，这里加一层细网格纹理 */
-  .bg::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: radial-gradient(circle at 50% 45%, #000 0%, rgba(0,0,0,0.35) 55%, transparent 78%);
-    -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, rgba(0,0,0,0.35) 55%, transparent 78%);
-  }
-  .blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(46px);
-    opacity: 0.6;
-    animation: float ease-in-out infinite;
-  }
-  .blob.a { width: 380px; height: 380px; left: 10%; top: 12%; background: #4a92ff; animation-duration: 16s; }
-  .blob.b { width: 300px; height: 300px; right: 12%; bottom: 10%; background: #9a6cff; animation-duration: 20s; }
-  .blob.c { width: 230px; height: 230px; left: 58%; top: 62%; background: #34d0ff; animation-duration: 24s; }
-  @keyframes float {
-    0%, 100% { transform: translate(0, 0); }
-    50% { transform: translate(24px, -30px); }
-  }
-
-  /* ===== 背景星光闪烁 ===== */
-  .stars {
-    position: absolute;
-    inset: 0;
-    z-index: 1; /* 盖在光斑与网格之上 */
-    pointer-events: none;
-  }
-  .star {
-    position: absolute;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow:
-      0 0 6px rgba(255, 255, 255, 0.85),
-      0 0 12px rgba(160, 210, 255, 0.55);
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.55);
-    animation-name: twinkle;
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
-  }
-  @keyframes twinkle {
-    0%, 100% { opacity: 0.08; transform: translate(-50%, -50%) scale(0.55); }
-    50%      { opacity: 1;    transform: translate(-50%, -50%) scale(1); }
-  }
-  /* 较亮的星点带十字星芒 */
-  .star.big::before,
-  .star.big::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.9), transparent);
-  }
-  .star.big::before { width: 1px; height: 14px; transform: translate(-50%, -50%); }
-  .star.big::after {
-    width: 14px;
-    height: 1px;
-    transform: translate(-50%, -50%);
-    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.9), transparent);
-  }
-
-  /* ===== 卡片容器（玻璃主体） ===== */
+  /* ===== 卡片舞台 ===== */
   .stage {
     position: relative;
     z-index: 1;
     width: min(440px, 92vw);
   }
 
+  /* 卡片：实色表面 + 描边 + 分层阴影，不使用毛玻璃 / 半透明 */
   .card-shell {
     position: relative;
-    border: 1px solid transparent;
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 0; /* 内边距由 .panel 承担（绝对定位子元素不受 padding 影响） */
     height: 464px; /* 兜底高度，加载完成后 JS 依据“较高面板”重新设定 */
-    /* 双层背景：内层玻璃底色(padding-box) + 外沿渐变高光(border-box) 形成玻璃边缘 */
-    background:
-      linear-gradient(160deg, var(--glass-tint) 0%, var(--glass-tint-2) 100%) padding-box,
-      linear-gradient(150deg,
-        rgba(255, 255, 255, 0.85) 0%,
-        rgba(255, 255, 255, 0.18) 22%,
-        rgba(255, 255, 255, 0.06) 50%,
-        rgba(255, 255, 255, 0.20) 78%,
-        rgba(255, 255, 255, 0.70) 100%) border-box;
-    box-shadow:
-      0 18px 50px -12px rgba(4, 16, 42, 0.60),
-      0 4px 14px rgba(4, 16, 42, 0.28),
-      inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      inset 0 0 40px rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(34px) saturate(185%) brightness(1.06);
-    -webkit-backdrop-filter: blur(34px) saturate(185%) brightness(1.06);
+    background: var(--surface);
+    box-shadow: var(--shadow-2);
     overflow: hidden;
     isolation: isolate;
     /* opacity 供认证卡片淡出（进入应用界面）与淡入（退出登录）使用 */
-    transition: opacity 0.26s linear, box-shadow 0.35s ease;
+    transition: opacity 0.26s linear, background 0.25s ease, border-color 0.25s ease;
   }
-  /* 顶部玻璃反光 */
-  .card-shell::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 2;
-    background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.02) 42%, rgba(255,255,255,0) 100%);
-  }
-  /* 悬浮流光：一道斜向光带从卡片上掠过 */
-  .card-shell::after {
-    content: "";
-    position: absolute;
-    top: -25%;
-    bottom: -25%;
-    left: -35%;
-    width: 32%;
-    pointer-events: none;
-    z-index: 4;
-    opacity: 0;
-    background: linear-gradient(to right,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.14) 35%,
-      rgba(255, 255, 255, 0.42) 50%,
-      rgba(255, 255, 255, 0.14) 65%,
-      rgba(255, 255, 255, 0) 100%);
-    transform: translateX(-220%) skewX(-16deg);
-  }
-  .card-shell:hover {
-    box-shadow:
-      0 22px 60px -12px rgba(4, 16, 42, 0.68),
-      0 4px 16px rgba(4, 16, 42, 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.62),
-      inset 0 0 46px rgba(255, 255, 255, 0.09);
-  }
-  .card-shell:hover::after {
-    animation: shine-sweep 1.15s ease-out;
-  }
-  @keyframes shine-sweep {
-    0%   { opacity: 0; transform: translateX(-220%) skewX(-16deg); }
-    14%  { opacity: 1; }
-    86%  { opacity: 1; }
-    100% { opacity: 0; transform: translateX(560%) skewX(-16deg); }
-  }
-
-  /* 细磨砂颗粒，增强玻璃质感 */
-  .grain {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    pointer-events: none;
-    opacity: 0.16;
-    mix-blend-mode: soft-light;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-  /* 跟随鼠标的柔光，与光带叠加形成“流光” */
-  .glow {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%),
-      rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.06) 42%, transparent 70%);
-  }
-  .card-shell:hover .glow { opacity: 1; }
 
   /* ===== 主标题 ===== */
   .brand {
@@ -273,28 +187,24 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    background: rgba(255, 255, 255, 0.10);
-    border: 1px solid var(--stroke);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: 0 16px;
     height: 50px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
     transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   }
   .input-wrap:hover {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: var(--stroke-strong);
+    background: var(--surface-3);
+    border-color: var(--border-strong);
   }
   .input-wrap:focus-within {
-    background: rgba(255, 255, 255, 0.17);
-    border-color: #8ecdff;
-    box-shadow:
-      0 0 0 3px rgba(124, 196, 255, 0.28),
-      0 6px 18px -6px rgba(58, 130, 255, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    background: var(--surface);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
   }
   .input-wrap svg { width: 18px; height: 18px; flex: none; color: var(--text-secondary); transition: color 0.2s ease; }
-  .input-wrap:focus-within svg { color: #b9e4ff; }
+  .input-wrap:focus-within svg { color: var(--accent); }
   .input-wrap input {
     flex: 1;
     border: none;
@@ -305,7 +215,7 @@
     font-size: 15px;
     height: 100%;
   }
-  .input-wrap input::placeholder { color: rgba(255, 255, 255, 0.42); }
+  .input-wrap input::placeholder { color: var(--text-muted); }
   /* 隐藏 Edge/IE 自带的密码显示按钮，避免与自定义按钮重复出现两个眼睛 */
   .input-wrap input::-ms-reveal,
   .input-wrap input::-ms-clear { display: none; }
@@ -331,8 +241,8 @@
     margin: 4px 0 24px;
     font-size: 13px;
   }
-  .row a { color: #a9d9ff; text-decoration: none; transition: color 0.16s ease; }
-  .row a:hover { color: #d6ecff; text-decoration: underline; }
+  .row a { color: var(--link); text-decoration: none; transition: color 0.16s ease; }
+  .row a:hover { color: var(--accent-hover); text-decoration: underline; }
   .check { display: flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; color: var(--text-secondary); transition: color 0.16s ease; }
   .check:hover { color: var(--text-primary); }
   .check input { position: absolute; opacity: 0; pointer-events: none; }
@@ -341,29 +251,29 @@
     width: 19px; height: 19px;
     flex: none;
     border-radius: 6px;
-    border: 1px solid var(--stroke);
-    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border-strong);
+    background: var(--surface-2);
     display: grid;
     place-items: center;
     transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
   }
-  .check:hover .box { border-color: var(--stroke-strong); }
+  .check:hover .box { border-color: var(--accent); }
   .check .box::after {
     content: "";
     width: 9px; height: 5px;
-    border-left: 2px solid #fff;
-    border-bottom: 2px solid #fff;
+    border-left: 2px solid var(--on-accent);
+    border-bottom: 2px solid var(--on-accent);
     transform: rotate(-45deg) translate(1px, -1px);
     opacity: 0;
   }
   .check input:checked + .box {
     background: var(--accent);
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.28);
+    box-shadow: 0 0 0 3px var(--accent-soft);
   }
   .check input:checked + .box::after { opacity: 1; }
 
-  /* ===== 主按钮 ===== */
+  /* ===== 主按钮：纯色 ===== */
   .btn {
     position: relative;
     width: 100%;
@@ -374,46 +284,25 @@
     font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.3px;
-    color: #fff;
-    background: linear-gradient(180deg, #1a8cff 0%, var(--accent) 100%);
-    box-shadow:
-      0 8px 20px -8px rgba(0, 120, 212, 0.85),
-      inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    color: var(--on-accent);
+    background: var(--accent);
+    box-shadow: var(--shadow-1);
     cursor: pointer;
     overflow: hidden;
     transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.08s ease;
   }
-  /* 按钮流光：hover 时光带扫过 */
-  .btn::after {
-    content: "";
-    position: absolute;
-    top: -40%;
-    bottom: -40%;
-    left: -30%;
-    width: 30%;
-    pointer-events: none;
-    background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.55), rgba(255,255,255,0));
-    transform: translateX(-260%) skewX(-20deg);
-  }
   .btn:hover {
-    background: linear-gradient(180deg, #2f97ff 0%, var(--accent-hover) 100%);
-    box-shadow:
-      0 10px 26px -8px rgba(0, 140, 255, 0.95),
-      inset 0 1px 0 rgba(255, 255, 255, 0.38);
+    background: var(--accent-hover);
+    box-shadow: var(--shadow-2);
   }
-  .btn:hover::after { animation: btn-shine 0.9s ease-out; }
-  .btn:active { background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent-press) 100%); transform: scale(0.985); }
-  .btn:focus-visible { box-shadow: 0 0 0 3px rgba(124,196,255,0.5); outline: none; }
-  @keyframes btn-shine {
-    0%   { transform: translateX(-260%) skewX(-20deg); }
-    100% { transform: translateX(560%) skewX(-20deg); }
-  }
+  .btn:active { background: var(--accent-press); transform: scale(0.985); }
+  .btn:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft); outline: none; }
 
   /* ===== 分隔与切换 ===== */
   .switch-hint {
     margin-top: 24px;
     padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid var(--divider);
     text-align: center;
     font-size: 13.5px;
     color: var(--text-secondary);
@@ -421,7 +310,7 @@
   .switch-hint button {
     background: none;
     border: none;
-    color: #a9d9ff;
+    color: var(--link);
     font-family: var(--font);
     font-size: 13.5px;
     font-weight: 600;
@@ -430,8 +319,8 @@
     border-radius: var(--radius-sm);
     transition: color 0.16s ease, background 0.16s ease;
   }
-  .switch-hint button:hover { color: #e2f1ff; background: rgba(255, 255, 255, 0.10); text-decoration: none; }
-  .switch-hint .dot { margin: 0 2px; color: rgba(255, 255, 255, 0.30); }
+  .switch-hint button:hover { color: var(--accent-hover); background: var(--surface-2); text-decoration: none; }
+  .switch-hint .dot { margin: 0 2px; color: var(--text-muted); }
 
   /* ===== 关于我们 / 公告 ===== */
   #panel-about .brand { margin-bottom: 22px; }
@@ -451,28 +340,27 @@
     padding-right: 8px;
     /* 简约式滚动条（Firefox） */
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+    scrollbar-color: var(--border-strong) transparent;
   }
   /* 简约式滚动条（Chromium/WebKit） */
   .notice-list::-webkit-scrollbar { width: 6px; }
   .notice-list::-webkit-scrollbar-track { background: transparent; }
   .notice-list::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.24);
+    background: var(--border-strong);
     border-radius: 3px;
   }
-  .notice-list::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+  .notice-list::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
   .notice {
     padding: 14px 16px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--stroke);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
   }
   .notice:hover {
-    background: rgba(255, 255, 255, 0.13);
-    border-color: var(--stroke-strong);
+    background: var(--surface-3);
+    border-color: var(--border-strong);
     transform: translateY(-1px);
   }
   .notice .meta {
@@ -489,10 +377,10 @@
     line-height: 1.6;
     padding: 0 8px;
     border-radius: 999px;
-    color: #fff;
+    color: var(--on-accent);
     background: var(--accent);
   }
-  .notice .tag.new { background: #4cc2ff; color: #06213c; }
+  .notice .tag.new { background: var(--accent-2); color: var(--on-accent-2); }
   .notice h3 { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
   .notice p { font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); }
 
@@ -506,15 +394,14 @@
     font-family: var(--font);
     font-size: 12.5px;
     font-weight: 600;
-    color: #a9d9ff;
-    background: rgba(255, 255, 255, 0.10);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    color: var(--link);
+    background: var(--surface-2);
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.16s ease, color 0.16s ease, opacity 0.16s ease;
   }
-  .code-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); color: #e2f1ff; }
-  .code-btn:disabled { cursor: default; opacity: 0.5; color: var(--text-secondary); }
+  .code-btn:hover:not(:disabled) { background: var(--surface-3); color: var(--accent-hover); }
+  .code-btn:disabled { cursor: default; opacity: 0.55; color: var(--text-muted); }
   .input-wrap input#reg-code { letter-spacing: 2px; }
 
   /* ===== 表单提示（错误 / 成功） ===== */
@@ -531,15 +418,14 @@
   }
   .msg.show { display: flex; }
   .msg svg { width: 15px; height: 15px; flex: none; margin-top: 1.5px; }
-  .msg.err { color: #ffd9dd; background: rgba(255, 92, 108, 0.16); border-color: rgba(255, 122, 136, 0.46); }
-  .msg.ok  { color: #d2ffe5; background: rgba(52, 199, 123, 0.15); border-color: rgba(92, 220, 152, 0.42); }
+  .msg.err { color: var(--danger); background: var(--danger-soft); border-color: var(--danger-border); }
+  .msg.ok  { color: var(--success); background: var(--success-soft); border-color: var(--success-border); }
 
   /* 提交按钮的加载态 */
-  .btn:disabled { cursor: default; transform: none; }
-  .btn:disabled::after { animation: none; }
+  .btn:disabled { cursor: default; transform: none; opacity: 0.6; }
 
   /* ===== 登录后的应用界面 =====
-     认证卡片与应用卡片共用 .card-shell 的玻璃质感与圆角，
+     认证卡片与应用卡片共用 .card-shell 的实色表面与圆角，
      靠 .stage.app 把舞台加宽，两者之间做淡出 / 淡入切换 */
 
   .stage { transition: width 0.32s ease; }
@@ -549,7 +435,7 @@
   .card-shell.hide { opacity: 0; pointer-events: none; }
 
   /* 应用卡片绝对定位叠在认证卡片之上并撑满舞台，尺寸由 .stage.app 决定。
-     两张卡片依次淡出 / 淡入，不同时可见，避免玻璃层叠加发灰。 */
+     两张卡片依次淡出 / 淡入，不同时可见，切换更干净。 */
   .app-shell {
     position: absolute;
     inset: 0;
@@ -570,7 +456,7 @@
     gap: 18px;
     flex: none;
     padding: 20px 34px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid var(--divider);
   }
   .app-brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
   .app-brand .mark {
@@ -597,9 +483,8 @@
     max-width: 46%;
     padding: 6px 18px 6px 6px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.09);
-    border: 1px solid var(--stroke);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
   }
   .app-user .mini {
     width: 31px;
@@ -626,7 +511,7 @@
     gap: 4px;
     flex: none;
     padding: 12px 28px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    border-bottom: 1px solid var(--divider);
   }
   .app-tab {
     position: relative;
@@ -643,8 +528,8 @@
     white-space: nowrap;
     transition: color 0.18s ease, background 0.18s ease;
   }
-  .app-tab:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.06); }
-  .app-tab.on { color: #fff; }
+  .app-tab:hover { color: var(--text-primary); background: var(--surface-2); }
+  .app-tab.on { color: var(--text-primary); }
   /* 活跃项底部指示条 */
   .app-tab::after {
     content: "";
@@ -667,12 +552,12 @@
     overflow-y: auto;
     padding: 32px 34px 36px;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+    scrollbar-color: var(--border-strong) transparent;
   }
   .app-body::-webkit-scrollbar { width: 6px; }
   .app-body::-webkit-scrollbar-track { background: transparent; }
-  .app-body::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.24); border-radius: 3px; }
-  .app-body::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+  .app-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+  .app-body::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
   .app-bar, .app-nav, .app-body { position: relative; z-index: 1; }
 
@@ -691,9 +576,9 @@
     border-radius: var(--radius-sm);
     font-size: 13px;
     line-height: 1.7;
-    color: #ffe6bd;
-    background: rgba(255, 190, 92, 0.12);
-    border: 1px dashed rgba(255, 200, 120, 0.44);
+    color: var(--warn);
+    background: var(--warn-soft);
+    border: 1px dashed var(--warn-border);
   }
   .todo b { font-weight: 600; }
 
@@ -710,9 +595,8 @@
     margin-bottom: 22px;
     padding: 32px 36px;
     border-radius: var(--radius-lg);
-    background: linear-gradient(150deg, rgba(95, 202, 255, 0.20), rgba(42, 109, 255, 0.13));
-    border: 1px solid rgba(255, 255, 255, 0.20);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.20);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
   }
   .hero h4 { font-size: 30px; font-weight: 600; letter-spacing: 0.2px; line-height: 1.3; }
   .hero .tagline {
@@ -723,11 +607,11 @@
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.4px;
-    color: #d8ecff;
-    background: rgba(95, 202, 255, 0.18);
-    border: 1px solid rgba(95, 202, 255, 0.38);
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
   }
-  .hero p { margin-top: 12px; font-size: 14.5px; line-height: 1.8; color: rgba(255, 255, 255, 0.84); }
+  .hero p { margin-top: 12px; font-size: 14.5px; line-height: 1.8; color: var(--text-secondary); }
   .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
   .hero .cta .btn { width: auto; height: 46px; padding: 0 30px; font-size: 14.5px; }
 
@@ -775,9 +659,8 @@
     height: 34px;
     padding: 0 12px;
     border-radius: 999px;
-    background: rgba(8, 20, 44, 0.42);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    backdrop-filter: blur(10px);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
   }
   .hero .bars i {
     width: 3px;
@@ -804,14 +687,13 @@
   .feat {
     padding: 22px 24px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--stroke);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
   }
   .feat:hover {
-    background: rgba(255, 255, 255, 0.13);
-    border-color: var(--stroke-strong);
+    background: var(--surface-3);
+    border-color: var(--border-strong);
     transform: translateY(-2px);
   }
   .feat .ico {
@@ -821,8 +703,8 @@
     border-radius: 12px;
     display: grid;
     place-items: center;
-    background: rgba(255, 255, 255, 0.13);
-    border: 1px solid rgba(255, 255, 255, 0.20);
+    /* 实色图标块：承载白色图标，两种主题下都清晰可辨 */
+    background: var(--icon-bg);
   }
   .feat .ico svg { width: 22px; height: 22px; }
   .feat h5 { font-size: 15.5px; font-weight: 600; margin-bottom: 8px; }
@@ -846,9 +728,9 @@
     padding: 18px;
     text-align: center;
     border-radius: var(--radius-md);
-    color: #ffe6bd;
-    background: rgba(255, 190, 92, 0.06);
-    border: 1px dashed rgba(255, 200, 120, 0.44);
+    color: var(--warn);
+    background: var(--warn-soft);
+    border: 1px dashed var(--warn-border);
   }
   .shot.wide { grid-column: 1 / -1; aspect-ratio: 21 / 8; }
   .shot .cam {
@@ -857,12 +739,13 @@
     border-radius: 12px;
     display: grid;
     place-items: center;
-    background: rgba(255, 190, 92, 0.12);
-    border: 1px solid rgba(255, 200, 120, 0.34);
+    background: var(--surface-2);
+    border: 1px solid var(--warn-border);
   }
-  .shot .cam svg { width: 20px; height: 20px; }
+  /* 占位图标改用主题警告色绘制（CSS 覆盖 SVG 上的 stroke 表现属性） */
+  .shot .cam svg { width: 20px; height: 20px; stroke: var(--warn); }
   .shot b { display: block; font-size: 14px; font-weight: 600; }
-  .shot span { display: block; margin-top: 4px; font-size: 12.5px; color: rgba(255, 230, 189, 0.72); }
+  .shot span { display: block; margin-top: 4px; font-size: 12.5px; color: var(--text-secondary); }
 
   /* --- 下载链接 --- */
   .dl-grid {
@@ -875,12 +758,20 @@
     flex-direction: column;
     padding: 22px 24px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--stroke);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
   }
   .dl-card .top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-  .dl-card .top svg { width: 26px; height: 26px; flex: none; }
+  /* 图标放在实色块上，白色图标在浅色 / 深色主题下都清晰 */
+  .dl-card .top svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    box-sizing: content-box;
+    padding: 5px;
+    border-radius: 10px;
+    background: var(--icon-bg);
+  }
   .dl-card .top b { font-size: 16px; font-weight: 600; }
   .dl-card .meta {
     display: flex;
@@ -892,8 +783,8 @@
   }
   .dl-card .btn { margin-top: auto; height: 44px; font-size: 14.5px; }
   .dl-card .btn:disabled {
-    background: rgba(255, 255, 255, 0.07);
-    color: var(--text-secondary);
+    background: var(--surface-sunken);
+    color: var(--text-muted);
     cursor: default;
   }
 
@@ -902,9 +793,8 @@
     margin-bottom: 16px;
     padding: 22px 24px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--stroke);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
   }
   .about-block h5 { font-size: 15.5px; font-weight: 600; margin-bottom: 10px; }
   .about-block p { font-size: 13.5px; line-height: 1.8; color: var(--text-secondary); }
@@ -912,28 +802,28 @@
   .kv span { color: var(--text-secondary); }
   .kv b { font-weight: 600; color: var(--text-primary); }
   /* 可点击的联系方式：邮箱用链接色，微信后跟一个小胶囊按钮 */
-  .kv a { color: #8fd0ff; font-weight: 600; text-decoration: none; }
+  .kv a { color: var(--link); font-weight: 600; text-decoration: none; }
   .kv a:hover { text-decoration: underline; }
   .kv .mini-btn {
     margin-left: 8px;
     padding: 3px 11px;
-    border: 1px solid rgba(95, 202, 255, 0.40);
+    border: 1px solid var(--accent);
     border-radius: 999px;
-    background: rgba(95, 202, 255, 0.14);
+    background: var(--accent-soft);
     font-family: var(--font);
     font-size: 12px;
     font-weight: 600;
-    color: #d8ecff;
+    color: var(--accent);
     cursor: pointer;
     transition: background 0.18s ease, border-color 0.18s ease;
   }
-  .kv .mini-btn:hover { background: rgba(95, 202, 255, 0.26); border-color: rgba(95, 202, 255, 0.62); }
+  .kv .mini-btn:hover { background: var(--surface-3); border-color: var(--accent-hover); }
 
   .me-head { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
   .me-head h4 { font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
   .me-head .mail { margin-top: 7px; font-size: 13.5px; color: var(--text-secondary); word-break: break-all; }
 
-  /* 头像：沿用 .logo 的渐变与高光，保持同一套玻璃语言 */
+  /* 头像：沿用 .logo 的品牌渐变，保持统一的视觉语言 */
   .home-avatar {
     width: 68px;
     height: 68px;
@@ -959,9 +849,8 @@
   .home-card {
     padding: 18px 20px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--stroke);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
   }
   .home-card .k {
     display: block;
@@ -971,20 +860,22 @@
     letter-spacing: 0.2px;
   }
   .home-card .v { font-size: 15.5px; font-weight: 600; }
-  .home-card .v.ok { color: #7cf0b4; }
+  .home-card .v.ok { color: var(--success); }
   .btn.ghost.wide { width: auto; min-width: 160px; padding: 0 26px; }
 
-  /* 次要按钮：退出登录等，不用主色以免与主操作抢视觉 */
+  /* 次要按钮：退出登录等，用中性实色，避免与主操作抢视觉 */
   .btn.ghost {
-    background: rgba(255, 255, 255, 0.10);
+    background: var(--surface-2);
     color: var(--text-primary);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    border: 1px solid var(--border);
+    box-shadow: none;
   }
   .btn.ghost:hover {
-    background: rgba(255, 255, 255, 0.17);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    background: var(--surface-3);
+    border-color: var(--border-strong);
+    box-shadow: none;
   }
-  .btn.ghost:active { background: rgba(255, 255, 255, 0.09); }
+  .btn.ghost:active { background: var(--surface-sunken); }
 
   /* 中等宽度：四列网格降为两列（窄于此宽度时四列会过于局促） */
   @media (max-width: 1120px) {
@@ -1030,7 +921,7 @@
   .panel {
     position: absolute;
     inset: 0;
-    z-index: 1; /* 位于玻璃反光/颗粒层之下、卡片内容之上 */
+    z-index: 1; /* 位于卡片内容层之上 */
     box-sizing: border-box;
     padding: 48px 42px 40px; /* 面板自行承担卡片内边距 */
     display: flex;
@@ -1047,26 +938,16 @@
 </style>
 </head>
 <body>
-  <div class="bg">
-    <div class="blob a"></div>
-    <div class="blob b"></div>
-    <div class="blob c"></div>
-    <div class="stars" id="stars"></div>
-  </div>
-
   <div class="stage" id="stage">
     <div class="card-shell" id="auth-shell">
-      <div class="grain" aria-hidden="true"></div>
-      <div class="glow" aria-hidden="true"></div>
-
       <!-- ===== 登录面板 ===== -->
       <form class="panel on" id="panel-login" autocomplete="off">
         <div class="brand">
           <div class="logo">
             <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="4" y="4" width="7" height="7" rx="1.5" fill="#fff" stroke="none"/>
-              <rect x="13" y="4" width="7" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" stroke="none"/>
-              <rect x="4" y="13" width="7" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" stroke="none"/>
+              <rect x="13" y="4" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/>
+              <rect x="4" y="13" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/>
               <rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke="#fff" stroke-width="1.6"/>
             </svg>
           </div>
@@ -1128,8 +1009,8 @@
           <div class="logo">
             <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="4" y="4" width="7" height="7" rx="1.5" fill="#fff" stroke="none"/>
-              <rect x="13" y="4" width="7" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" stroke="none"/>
-              <rect x="4" y="13" width="7" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" stroke="none"/>
+              <rect x="13" y="4" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/>
+              <rect x="4" y="13" width="7" height="7" rx="1.5" fill="#cfe4ff" stroke="none"/>
               <rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke="#fff" stroke-width="1.6"/>
             </svg>
           </div>
@@ -1250,9 +1131,6 @@
 
     <!-- ===== 登录后的应用界面 ===== -->
     <div class="card-shell app-shell" id="app-shell">
-      <div class="grain" aria-hidden="true"></div>
-      <div class="glow" aria-hidden="true"></div>
-
       <!-- 顶栏：品牌 + 当前用户 -->
       <div class="app-bar">
         <div class="app-brand">
@@ -1260,7 +1138,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 18V6.6l9-1.8v10.9"/>
               <circle cx="6.6" cy="18" r="2.4" fill="#fff" stroke="none"/>
-              <circle cx="15.6" cy="15.7" r="2.4" fill="rgba(255,255,255,0.75)" stroke="none"/>
+              <circle cx="15.6" cy="15.7" r="2.4" fill="#d8e8ff" stroke="none"/>
             </svg>
           </div>
           <div>
@@ -1563,26 +1441,6 @@
     console.warn('[提示] 页面在 GitHub Pages 上但未配置 BACKEND_URL，/api 请求会打到静态站点而失败。');
   }
 
-  // ===== 背景星光：随机分布、错峰闪烁 =====
-  (function makeStars() {
-    const box = document.getElementById('stars');
-    const COUNT = 70;
-    for (let i = 0; i < COUNT; i++) {
-      const big = Math.random() < 0.18;          // 少量亮点带十字星芒
-      const size = big ? 2.4 + Math.random() * 2 : 1 + Math.random() * 1.4;
-      const s = document.createElement('span');
-      s.className = big ? 'star big' : 'star';
-      s.style.left = Math.random() * 100 + '%';
-      s.style.top = Math.random() * 100 + '%';
-      s.style.width = size.toFixed(2) + 'px';
-      s.style.height = size.toFixed(2) + 'px';
-      s.style.animationDuration = (2.2 + Math.random() * 3.6).toFixed(2) + 's';
-      // 负延迟让星点从动画中途开始，避免同时亮起
-      s.style.animationDelay = (-Math.random() * 6).toFixed(2) + 's';
-      box.appendChild(s);
-    }
-  })();
-
   const shell = document.getElementById('auth-shell');
   const panels = Array.from(document.querySelectorAll('.panel'));
   let activeName = 'login';
@@ -1830,7 +1688,7 @@
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
-  // 认证卡片与应用卡片依次淡出 / 淡入：中间留出一次 fade，避免两张玻璃卡叠加发灰
+  // 认证卡片与应用卡片依次淡出 / 淡入：中间留出一次 fade，让切换更干净
   function showApp(on) {
     if (on) {
       shell.classList.add('hide');
@@ -1936,17 +1794,6 @@
       }
     });
   });
-
-  // 跟随鼠标的柔光：把光标位置写入 CSS 变量，驱动 .glow 的径向高光
-  function trackGlow(el) {
-    el.addEventListener('pointermove', (e) => {
-      const r = el.getBoundingClientRect();
-      el.style.setProperty('--mx', ((e.clientX - r.left) / r.width) * 100 + '%');
-      el.style.setProperty('--my', ((e.clientY - r.top) / r.height) * 100 + '%');
-    });
-  }
-  trackGlow(shell);
-  trackGlow(appShell);
 
   // 初始化：测量高度；等字体加载完成、窗口尺寸变化后再校正
   sizeShell();
