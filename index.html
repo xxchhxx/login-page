@@ -385,6 +385,19 @@
   }
   .lang-toggle:hover { color: var(--accent); border-color: var(--accent-soft); }
   .lang-toggle:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-soft); }
+  /* 侧边栏内的语言切换：紧凑版，桌面端位于导航下方 */
+  .side-lang {
+    align-self: flex-start;
+    margin-top: 14px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+  @media (max-width: 1120px) {
+    /* 侧边栏变横向顶栏时，语言按钮收窄跟随在导航右侧 */
+    .side-lang { align-self: center; margin-top: 0; flex: none; }
+  }
   .auth-panels { position: relative; flex: 1; min-height: 0; }
 
   /* 分屏后各面板：品牌标题左对齐 + 副文案引导 */
@@ -1957,6 +1970,8 @@
           </button>
         </nav>
 
+        <button type="button" class="lang-toggle side-lang" id="btn-lang-app" aria-label="切换语言 / Switch language" title="切换语言 / Switch language">EN</button>
+
         <div class="side-user">
           <span class="mini" id="app-avatar">·</span>
           <div class="uu">
@@ -2181,12 +2196,12 @@
           <div class="about-block">
             <h5>联系我们</h5>
             <div class="kv">
-              <span>邮箱 <a href="mailto:a13828563360@163.com">a13828563360@163.com</a></span>
-              <span>微信 <b id="wx-id">chh-shanyu-520</b>
+              <span><span class="kv-t">邮箱</span> <a href="mailto:a13828563360@163.com">a13828563360@163.com</a></span>
+              <span><span class="kv-t">微信</span> <b id="wx-id">chh-shanyu-520</b>
                 <button class="mini-btn" type="button" id="btn-wx">复制并打开微信</button>
               </span>
-              <span>问题反馈 <b>GitHub Issues</b></span>
-              <span>响应时间 <b>1–2 个工作日</b></span>
+              <span><span class="kv-t">问题反馈</span> <b>GitHub Issues</b></span>
+              <span><span class="kv-t">响应时间</span> <b>1–2 个工作日</b></span>
             </div>
           </div>
 
@@ -2255,9 +2270,9 @@
           <div class="about-block">
             <h5>版本信息</h5>
             <div class="kv">
-              <span>最新版本 <b>v1.4.0</b></span>
-              <span>更新日期 <b>2026-10-02</b></span>
-              <span>支持平台 <b>Windows · macOS · Android · iOS</b></span>
+              <span><span class="kv-t">最新版本</span> <b>v1.4.0</b></span>
+              <span><span class="kv-t">更新日期</span> <b>2026-10-02</b></span>
+              <span><span class="kv-t">支持平台</span> <b>Windows · macOS · Android · iOS</b></span>
             </div>
           </div>
         </section>
@@ -2380,7 +2395,7 @@
         <label class="check">
           <input type="checkbox" id="notice-never">
           <span class="box"></span>
-          可不再提示
+          <span class="check-tx">可不再提示</span>
         </label>
         <button class="btn" type="button" id="notice-ok">我知道了</button>
       </div>
@@ -2810,11 +2825,11 @@
   // 按当前时段问候
   function dayTimeGreeting() {
     const h = new Date().getHours();
-    if (h < 5) return '夜深了';
-    if (h < 11) return '早上好';
-    if (h < 13) return '中午好';
-    if (h < 18) return '下午好';
-    return '晚上好';
+    if (h < 5) return t('greetNight');
+    if (h < 11) return t('greetMorning');
+    if (h < 13) return t('greetNoon');
+    if (h < 18) return t('greetAfternoon');
+    return t('greetEvening');
   }
 
   function formatDate(ms) {
@@ -2826,12 +2841,12 @@
   // 取用户名首字作头像文字
   const initialOf = (name) => String(name || '').trim().slice(0, 1).toUpperCase() || '?';
 
-  // 页眉文案：与分页一一对应，切换时同步更新主区标题与副标题
+  // 页眉文案：与分页一一对应，值为 STR 字典键，切换语言时随 t() 更新
   const APP_TITLES = {
-    intro:    ['产品介绍', '了解 CH music 的核心能力'],
-    download: ['下载链接', '选择适合你设备的安装包'],
-    about:    ['关于我们', '团队、联系方式与版本信息'],
-    me:       ['个人中心', '账号信息与登录状态']
+    intro:    ['appIntroT', 'appIntroS'],
+    download: ['appDlT', 'appDlS'],
+    about:    ['appAboutT', 'appAboutS'],
+    me:       ['appMeT', 'appMeS']
   };
 
   // 分页切换：侧边导航与页面里的跳转按钮共用
@@ -2843,10 +2858,10 @@
     document.querySelectorAll('.app-page').forEach((p) => {
       p.classList.toggle('on', p.id === 'page-' + name);
     });
-    const t = APP_TITLES[name];
-    if (t) {
-      document.getElementById('app-title').textContent = t[0];
-      document.getElementById('app-sub').textContent = t[1];
+    const hd = APP_TITLES[name];
+    if (hd) {
+      document.getElementById('app-title').textContent = t(hd[0]);
+      document.getElementById('app-sub').textContent = t(hd[1]);
     }
     document.getElementById('app-body').scrollTop = 0;
   }
@@ -2889,6 +2904,22 @@
       '<b>排版细节优化</b>：统一间距与对齐规范，视觉层级更清晰，操作更流畅。'
     ]
   };
+  // 英文版公告（结构与 ANNOUNCE 保持一致）
+  const ANNOUNCE_EN = {
+    version: 'v1.4.0',
+    date: '2026-10-02',
+    title: 'v1.4.0 Released',
+    intro: "What's in this update:",
+    items: [
+      '<b>Main interface rebuilt</b>: after sign-in the app uses sidebar navigation with a dynamic header — every page is clear at a glance.',
+      '<b>Mobile experience fixes</b>: resolved content overflow, clipped navigation, and bottom occlusion on narrow screens.',
+      '<b>Typography polish</b>: unified spacing and alignment for a clearer hierarchy and smoother operation.'
+    ]
+  };
+  // 按当前语言取公告数据
+  function announceData() {
+    return lang === 'en' ? ANNOUNCE_EN : ANNOUNCE;
+  }
 
   // 勾选「可不再提示」后记录版本号；发布新版本时版本号变化，公告会再次弹出
   const NOTICE_KEY = 'ch-music-notice-seen';
@@ -2896,15 +2927,16 @@
   const noticeNever = document.getElementById('notice-never');
 
   function showNotice() {
-    if (localStorage.getItem(NOTICE_KEY) === ANNOUNCE.version) return;
-    document.getElementById('notice-version').textContent = ANNOUNCE.version;
-    document.getElementById('notice-date').textContent = ANNOUNCE.date;
-    document.getElementById('notice-title').textContent = ANNOUNCE.title;
-    document.getElementById('notice-sub').textContent = ANNOUNCE.intro;
+    const A = announceData();
+    if (localStorage.getItem(NOTICE_KEY) === A.version) return;
+    document.getElementById('notice-version').textContent = A.version;
+    document.getElementById('notice-date').textContent = A.date;
+    document.getElementById('notice-title').textContent = A.title;
+    document.getElementById('notice-sub').textContent = A.intro;
     const list = document.getElementById('notice-list');
     list.innerHTML = '';
     // 条目为本地静态文案（非用户输入），可用 innerHTML 以便加粗关键词
-    ANNOUNCE.items.forEach((html) => {
+    A.items.forEach((html) => {
       const li = document.createElement('li');
       li.innerHTML = html;
       list.appendChild(li);
@@ -2914,7 +2946,7 @@
   }
 
   function closeNotice() {
-    if (noticeNever.checked) localStorage.setItem(NOTICE_KEY, ANNOUNCE.version);
+    if (noticeNever.checked) localStorage.setItem(NOTICE_KEY, announceData().version);
     noticeModal.classList.remove('open');
   }
 
@@ -3063,7 +3095,25 @@
     ghCanceled:    ['已取消 GitHub 登录', 'GitHub sign-in cancelled'],
     // 控件
     showPwd:       ['显示密码', 'Show password'],
-    hidePwd:       ['隐藏密码', 'Hide password']
+    hidePwd:       ['隐藏密码', 'Hide password'],
+    // 应用界面（登录后）
+    appIntroT:     ['产品介绍', 'Overview'],
+    appIntroS:     ['了解 CH music 的核心能力', 'Explore the core features of CH music'],
+    appDlT:        ['下载链接', 'Download'],
+    appDlS:        ['选择适合你设备的安装包', 'Pick the installer for your device'],
+    appAboutT:     ['关于我们', 'About us'],
+    appAboutS:     ['团队、联系方式与版本信息', 'Team, contact info, and version details'],
+    appMeT:        ['个人中心', 'Account'],
+    appMeS:        ['账号信息与登录状态', 'Account info and sign-in status'],
+    signedIn:      ['已登录', 'Signed in'],
+    daysLeft:      ['剩余 {s} 天', '{s} days left'],
+    signingOut:    ['退出中…', 'Signing out…'],
+    wxCopied:      ['微信号已复制', 'WeChat ID copied'],
+    greetNight:    ['夜深了', 'Up late'],
+    greetMorning:  ['早上好', 'Good morning'],
+    greetNoon:     ['中午好', 'Good day'],
+    greetAfternoon:['下午好', 'Good afternoon'],
+    greetEvening:  ['晚上好', 'Good evening']
   };
 
   function t(key, rep) {
@@ -3142,10 +3192,129 @@
     ['#panel-about .notice:nth-child(6) h3', '', '欢迎使用', 'Welcome'],
     ['#panel-about .notice:nth-child(6) p', '', '感谢你的到来。账号相关问题可通过页面底部的联系方式与我们取得联系。', 'Thanks for coming. For account issues, reach us via the contact info at the bottom of the page.'],
     ['#panel-about .switch-hint [data-goto="login"]', '', '返回登录', 'Back to sign in'],
-    ['#panel-about .switch-hint [data-goto="register"]', '', '注册账户', 'Create account']
+    ['#panel-about .switch-hint [data-goto="register"]', '', '注册账户', 'Create account'],
+    // ===== 侧边栏与页眉（登录后） =====
+    ['.side-brand .tt span', '', '本地音乐播放器', 'Local music player'],
+    ['.app-nav', 'aria-label', '功能导航', 'Navigation'],
+    ['.app-tab[data-tab="intro"] span', '', '产品介绍', 'Overview'],
+    ['.app-tab[data-tab="download"] span', '', '下载链接', 'Download'],
+    ['.app-tab[data-tab="about"] span', '', '关于我们', 'About us'],
+    ['.app-tab[data-tab="me"] span', '', '个人中心', 'Account'],
+    ['#side-mail', '', '已登录', 'Signed in'],
+    ['#app-title', '', '产品介绍', 'Overview'],
+    ['#app-sub', '', '了解 CH music 的核心能力', 'Explore the core features of CH music'],
+    // ===== 产品介绍 =====
+    ['#page-intro .tagline', '', '本地播放 · 无需联网', 'Local playback · No internet needed'],
+    ['#page-intro .hero h4', '', '把音乐留在本地，把播放体验做到极致', 'Keep your music local. Perfect the way it plays.'],
+    ['#page-intro .hero p', '', 'CH music 是一款专注本地曲库的音乐播放器：不上传任何文件、不依赖网络，扫描一次本地文件夹就能自动整理好专辑与歌手，再配上歌词、均衡器与无损解码，安静地做好一台播放器。', 'CH music is a player dedicated to your local library: no uploads, no internet required. Scan a folder once and albums and artists are organized automatically — with lyrics, an equalizer, and lossless decoding, it quietly does one job well.'],
+    ['#page-intro .cta [data-tab="download"]', '', '免费下载', 'Free download'],
+    ['#page-intro .cta [data-tab="about"]', '', '了解更多', 'Learn more'],
+    ['#page-intro .feat-grid .feat:nth-child(1) h5', '', '本地曲库管理', 'Local library management'],
+    ['#page-intro .feat-grid .feat:nth-child(1) p', '', '选中文件夹一键扫描，自动读取歌曲标签，按专辑、歌手、文件夹归好类，上千首也不乱。', 'Scan any folder in one click — tags are read automatically and songs sorted by album, artist, and folder. Thousands of tracks, never messy.'],
+    ['#page-intro .feat-grid .feat:nth-child(2) h5', '', '全格式无损解码', 'Lossless decoding, every format'],
+    ['#page-intro .feat-grid .feat:nth-child(2) p', '', '支持 MP3 / FLAC / APE / WAV / M4A / OGG 等常见格式，解码输出保持原始音质。', 'MP3 / FLAC / APE / WAV / M4A / OGG and more, decoded to preserve the original sound.'],
+    ['#page-intro .feat-grid .feat:nth-child(3) h5', '', '歌词与桌面歌词', 'Lyrics & desktop lyrics'],
+    ['#page-intro .feat-grid .feat:nth-child(3) p', '', 'LRC 歌词自动匹配，逐字高亮跟唱，还能把歌词单独悬停在桌面随时看。', 'LRC lyrics matched automatically with word-by-word highlighting, plus a floating desktop lyric you can keep on screen.'],
+    ['#page-intro .feat-grid .feat:nth-child(4) h5', '', '均衡器与音效', 'Equalizer & effects'],
+    ['#page-intro .feat-grid .feat:nth-child(4) p', '', '十段均衡器、多种预设音效与淡入淡出、音量均衡，听感随手可调。', 'A ten-band equalizer, preset effects, fade in/out, and volume normalization — tune the sound as you like.'],
+    ['#page-intro .section-t h3', '', '界面预览', 'Preview'],
+    ['#page-intro .section-t p', '', '先按最终排版占好位置，拿到真实截图后替换进对应的框内即可。', 'Placeholder frames for the final layout — real screenshots will replace these soon.'],
+    ['#page-intro .shot:nth-child(1) b', '', '截图待替换', 'Screenshot coming soon'],
+    ['#page-intro .shot:nth-child(1) span', '', '主界面 · 本地曲库与播放列表面板', 'Main view · library & playlist panels'],
+    ['#page-intro .shot:nth-child(2) b', '', '截图待替换', 'Screenshot coming soon'],
+    ['#page-intro .shot:nth-child(2) span', '', '播放页 · 专辑封面与逐字歌词', 'Now playing · cover & synced lyrics'],
+    ['#page-intro .shot:nth-child(3) b', '', '截图待替换', 'Screenshot coming soon'],
+    ['#page-intro .shot:nth-child(3) span', '', '均衡器 · 音效与播放设置', 'Equalizer · effects & playback settings'],
+    ['#page-intro .shot:nth-child(4) b', '', '截图待替换', 'Screenshot coming soon'],
+    ['#page-intro .shot:nth-child(4) span', '', '设置 · 曲库扫描与快捷键', 'Settings · library scan & shortcuts'],
+    // ===== 下载链接 =====
+    ['#page-download .todo', 'html', '<b>链接待补充：</b>各平台安装包尚未发布，按钮暂时置灰。拿到真实下载地址后，把下面的 button 换成带 href 的 a 标签即可。', '<b>Links pending:</b> installers are not published yet, so the buttons stay disabled. Once real URLs are ready, swap the buttons below for links.'],
+    ['#page-download .page-hd h3', '', '选择你的平台', 'Choose your platform'],
+    ['#page-download .page-hd p', '', '同一个账号可在任意设备登录，收藏与播放列表实时同步；安装包体积小，装完即可离线播放本地音乐。', 'One account works on every device — favorites and playlists sync in real time. Small installers, offline playback out of the box.'],
+    ['#page-download .dl-card:nth-child(1) .meta span:nth-child(2)', '', 'Windows 10 / 11 · 64 位', 'Windows 10 / 11 · 64-bit'],
+    ['#page-download .dl-card:nth-child(1) .meta span:nth-child(3)', '', '约 68 MB', '≈ 68 MB'],
+    ['#page-download .dl-card:nth-child(1) .btn', '', '即将推出', 'Coming soon'],
+    ['#page-download .dl-card:nth-child(2) .meta span:nth-child(2)', '', 'Apple 芯片 / Intel', 'Apple silicon / Intel'],
+    ['#page-download .dl-card:nth-child(2) .meta span:nth-child(3)', '', '约 74 MB', '≈ 74 MB'],
+    ['#page-download .dl-card:nth-child(2) .btn', '', '即将推出', 'Coming soon'],
+    ['#page-download .dl-card:nth-child(3) .meta span:nth-child(3)', '', '约 32 MB', '≈ 32 MB'],
+    ['#page-download .dl-card:nth-child(3) .btn', '', '即将推出', 'Coming soon'],
+    ['#page-download .dl-card:nth-child(4) .meta span:nth-child(3)', '', '约 46 MB', '≈ 46 MB'],
+    ['#page-download .dl-card:nth-child(4) .btn', '', '即将推出', 'Coming soon'],
+    // ===== 关于我们 =====
+    ['#page-about .todo', 'html', '<b>内容待补充：</b>下方的介绍与联系方式均为占位内容，请替换为真实信息。', '<b>Content pending:</b> the intro and contact info below are placeholders — replace them with real details.'],
+    ['#page-about .page-hd h3', '', '关于 CH music', 'About CH music'],
+    ['#page-about .page-hd p', '', '我们只想认真做一款本地音乐播放器。', 'We just want to build a local music player, properly.'],
+    ['#page-about .about-block:nth-child(3) h5', '', '我们是谁', 'Who we are'],
+    ['#page-about .about-block:nth-child(3) p', '', 'CH music 由一个小团队开发与维护。我们不喜欢为了听几首本地音乐就必须登录、上传、看广告，所以把它做成了一款纯粹的播放器：曲库放在你自己的硬盘上，扫描、播放、整理全部在本地完成。你在这里看到的账号只用于同步收藏与播放列表，音乐文件永远不上传。', "CH music is built and maintained by a small team. We didn't like having to log in, upload files, or watch ads just to play a few local songs — so we made a pure player: your library lives on your own drive, and scanning, playback, and organizing all happen locally. The account here only syncs favorites and playlists; music files are never uploaded."],
+    ['#page-about .about-block:nth-child(4) h5', '', '联系我们', 'Contact us'],
+    ['#page-about .about-block:nth-child(4) .kv span:nth-child(1) .kv-t', '', '邮箱', 'Email'],
+    ['#page-about .about-block:nth-child(4) .kv span:nth-child(2) .kv-t', '', '微信', 'WeChat'],
+    ['#btn-wx', '', '复制并打开微信', 'Copy & open WeChat'],
+    ['#page-about .about-block:nth-child(4) .kv span:nth-child(3) .kv-t', '', '问题反馈', 'Feedback'],
+    ['#page-about .about-block:nth-child(4) .kv span:nth-child(4) .kv-t', '', '响应时间', 'Response time'],
+    ['#page-about .about-block:nth-child(4) .kv span:nth-child(4) b', '', '1–2 个工作日', '1–2 business days'],
+    ['#page-about .about-block:nth-child(5) h5', '', '更新日志', 'Changelog'],
+    ['#page-about .cl-item:nth-child(1) .cl-tag', '', '最新', 'Latest'],
+    ['#page-about .cl-item:nth-child(1) li:nth-child(1)', 'html', '<b>主界面重构</b>：登录后界面改为「侧边栏导航 + 动态页眉」布局，各页面标题与功能一目了然，切换更直观。', '<b>Main interface rebuilt</b>: after sign-in the app uses sidebar navigation with a dynamic header — every page is clear at a glance and switching feels natural.'],
+    ['#page-about .cl-item:nth-child(1) li:nth-child(2)', 'html', '<b>移动端修复</b>：解决窄屏下内容溢出卡片、导航被裁切、底部被遮挡三类显示问题，手机端可正常浏览与滚动。', '<b>Mobile fixes</b>: resolved content overflow, clipped navigation, and bottom occlusion on narrow screens; phones can now browse and scroll normally.'],
+    ['#page-about .cl-item:nth-child(1) li:nth-child(3)', 'html', '<b>排版优化</b>：统一间距与对齐规范，宽屏下内容限宽居中，视觉层级更清晰、阅读更舒适。', '<b>Typography polish</b>: unified spacing and alignment, content centered with a max width on wide screens — clearer hierarchy, more comfortable reading.'],
+    ['#page-about .cl-item:nth-child(2) li:nth-child(1)', 'html', '<b>视觉改版</b>：移除毛玻璃与半透明效果，界面全面改为纯色背景，层次更分明。', '<b>Visual refresh</b>: removed frosted glass and translucency; the interface now uses solid backgrounds with clearer layering.'],
+    ['#page-about .cl-item:nth-child(2) li:nth-child(2)', 'html', '<b>主题切换</b>：深浅色主题跟随系统设置自动切换，两种模式下均保持清晰对比。', '<b>Theme switching</b>: light and dark themes follow the system automatically, staying readable in both modes.'],
+    ['#page-about .cl-item:nth-child(2) li:nth-child(3)', 'html', '<b>设计规范</b>：统一卡片、按钮与表单的描边和阴影样式。', '<b>Design system</b>: unified borders and shadows for cards, buttons, and forms.'],
+    ['#page-about .cl-item:nth-child(2) li:nth-child(4)', 'html', '<b>版本公告</b>：登录后自动弹出更新说明，可勾选「可不再提示」。', '<b>Release notes</b>: the update notice pops up automatically after sign-in, with a "Don\'t show again" option.'],
+    ['#page-about .cl-item:nth-child(3) li:nth-child(1)', 'html', '<b>登录保护</b>：新增异常登录提示，账号异常活动及时知晓。', '<b>Sign-in protection</b>: new alerts for unusual sign-in activity, so you know right away.'],
+    ['#page-about .cl-item:nth-child(3) li:nth-child(2)', 'html', '<b>设备管理</b>：新增登录设备列表，支持查看与管理已登录设备。', '<b>Device management</b>: view and manage the devices signed in to your account.'],
+    ['#page-about .cl-item:nth-child(3) li:nth-child(3)', 'html', '<b>注册优化</b>：简化注册流程，并修复部分设备上密码可见性切换异常的问题。', '<b>Registration improvements</b>: a simpler sign-up flow, plus a fix for the password visibility toggle issue on some devices.'],
+    ['#page-about .cl-item:nth-child(4) li:nth-child(1)', 'html', '<b>首次发布</b>：本地曲库扫描与播放核心功能上线。', '<b>First release</b>: local library scanning and the playback core.'],
+    ['#page-about .cl-item:nth-child(4) li:nth-child(2)', 'html', '<b>账号系统</b>：支持邮箱注册、登录与会话保持。', '<b>Account system</b>: email sign-up, sign-in, and session keeping.'],
+    ['#page-about .cl-item:nth-child(4) li:nth-child(3)', 'html', '<b>云同步</b>：收藏、播放列表与播放进度多设备同步，音乐文件始终保存在本地。', '<b>Cloud sync</b>: favorites, playlists, and playback progress sync across devices; music files always stay local.'],
+    ['#page-about .about-block:nth-child(6) h5', '', '版本信息', 'Version info'],
+    ['#page-about .about-block:nth-child(6) .kv span:nth-child(1) .kv-t', '', '最新版本', 'Latest version'],
+    ['#page-about .about-block:nth-child(6) .kv span:nth-child(2) .kv-t', '', '更新日期', 'Released'],
+    ['#page-about .about-block:nth-child(6) .kv span:nth-child(3) .kv-t', '', '支持平台', 'Platforms'],
+    // ===== 个人中心 =====
+    ['#me-greet', '', '欢迎回来', 'Welcome back'],
+    ['#page-me .home-card:nth-child(1) .k', '', '账号状态', 'Account status'],
+    ['#page-me .home-card:nth-child(1) .v', '', '邮箱已验证', 'Email verified'],
+    ['#page-me .home-card:nth-child(2) .k', '', '注册时间', 'Registered on'],
+    ['#page-me .home-card:nth-child(3) .k', '', '本次登录', 'This session'],
+    ['#page-me .home-card:nth-child(3) .v', '', '刚刚', 'Just now'],
+    ['#page-me .home-card:nth-child(4) .k', '', '登录有效期', 'Session expires'],
+    ['#page-me .about-block:nth-child(3) h5', '', '界面设置', 'Interface settings'],
+    ['#page-me .pref-row:nth-child(1) .pref-info b', '', '主题色', 'Accent color'],
+    ['#page-me .pref-row:nth-child(1) .pref-info span', '', '强调色应用于按钮、导航与链接', 'Applied to buttons, navigation, and links'],
+    ['.swatch[data-accent="blue"]', 'aria-label', '蓝色', 'Blue'],
+    ['.swatch[data-accent="blue"]', 'title', '蓝色', 'Blue'],
+    ['.swatch[data-accent="cyan"]', 'aria-label', '青色', 'Cyan'],
+    ['.swatch[data-accent="cyan"]', 'title', '青色', 'Cyan'],
+    ['.swatch[data-accent="purple"]', 'aria-label', '紫色', 'Purple'],
+    ['.swatch[data-accent="purple"]', 'title', '紫色', 'Purple'],
+    ['.swatch[data-accent="green"]', 'aria-label', '绿色', 'Green'],
+    ['.swatch[data-accent="green"]', 'title', '绿色', 'Green'],
+    ['.swatch[data-accent="rose"]', 'aria-label', '玫红', 'Rose'],
+    ['.swatch[data-accent="rose"]', 'title', '玫红', 'Rose'],
+    ['#page-me .pref-row:nth-child(2) .pref-info b', '', '外观模式', 'Appearance'],
+    ['#page-me .pref-row:nth-child(2) .pref-info span', '', '深浅色可固定，或跟随系统自动切换', 'Fix light or dark, or follow the system automatically'],
+    ['.prefs .seg [data-theme-opt="system"]', '', '跟随系统', 'System'],
+    ['.prefs .seg [data-theme-opt="light"]', '', '浅色', 'Light'],
+    ['.prefs .seg [data-theme-opt="dark"]', '', '深色', 'Dark'],
+    ['#page-me .pref-row:nth-child(3) .pref-info b', '', '动画效果', 'Animations'],
+    ['#page-me .pref-row:nth-child(3) .pref-info span', '', '关闭后界面过渡与入场动画将即时完成', 'When off, transitions and entrance animations finish instantly'],
+    ['#pref-motion', 'aria-label', '动画效果', 'Animations'],
+    ['#page-me .pref-row:nth-child(4) .pref-info b', '', '版本公告', 'Release notes'],
+    ['#page-me .pref-row:nth-child(4) .pref-info span', '', '重新查看 v1.4.0 的更新说明', 'Review the v1.4.0 release notes'],
+    ['#pref-notice', '', '查看公告', 'View notes'],
+    ['#page-me .about-block:nth-child(4) h5', '', '账号说明', 'About your account'],
+    ['#page-me .about-block:nth-child(4) p', '', '该账号仅用于同步收藏、播放列表与播放进度；本地音乐文件始终保存在你自己的设备上，不会上传到服务器。', 'This account only syncs favorites, playlists, and playback progress; your local music files always stay on your own device and are never uploaded to a server.'],
+    ['#btn-logout', '', '退出登录', 'Sign out'],
+    // ===== 版本公告弹窗 =====
+    ['#notice-modal .modal-x', 'aria-label', '关闭公告', 'Close release notes'],
+    ['#notice-modal .check .check-tx', '', '可不再提示', "Don't show again"],
+    ['#notice-ok', '', '我知道了', 'Got it']
   ];
 
-  // 把当前语言应用到登录界面的所有静态文案
+  // 把当前语言应用到全部界面（登录界面 + 登录后的应用界面）的静态文案
   function applyLang() {
     const i = LANGS.indexOf(lang);
     DOM_MAP.forEach(([sel, attr, zh, en]) => {
@@ -3158,8 +3327,19 @@
     });
     document.title = t('pageTitle');
     document.documentElement.lang = i === 0 ? 'zh-CN' : 'en';
-    const btn = document.getElementById('btn-lang');
-    if (btn) btn.textContent = i === 0 ? 'EN' : '中文';
+    // 同步所有语言按钮的文案（登录界面 + 侧边栏），显示“目标语言”
+    document.querySelectorAll('.lang-toggle').forEach((b) => {
+      b.textContent = i === 0 ? 'EN' : '中文';
+    });
+    // 页眉标题/副标题跟随当前所在分页
+    const cur = document.querySelector('.app-page.on');
+    if (cur) {
+      const hd = APP_TITLES[cur.id.slice(5)];
+      if (hd) {
+        document.getElementById('app-title').textContent = t(hd[0]);
+        document.getElementById('app-sub').textContent = t(hd[1]);
+      }
+    }
   }
 
   // 首次访问：浏览器语言以 zh 开头视为中文环境，其余一律英文
@@ -3170,32 +3350,65 @@
     return list.some((l) => String(l || '').toLowerCase().indexOf('zh') === 0) ? 'zh' : 'en';
   }
 
+  // 通过 IP 归属地判断地区语言：中国大陆 → 中文，其余 → 英文。
+  // 浏览器语言不随 VPN 变化，VPN 场景靠这一步校正；查询失败时静默保持浏览器语言结果。
+  function fetchCountry(url, timeoutMs) {
+    return new Promise((resolve) => {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+      fetch(url, { signal: ctrl.signal })
+        .then((r) => r.json())
+        .then((d) => { clearTimeout(timer); resolve((d && d.country_code) || null); })
+        .catch(() => { clearTimeout(timer); resolve(null); });
+    });
+  }
+  async function detectRegionLang() {
+    const cc = await fetchCountry('https://ipwho.is/', 2500)
+      .then((c) => c || fetchCountry('https://ipapi.co/json/', 2500));
+    return cc === 'CN' ? 'zh' : cc ? 'en' : null;
+  }
+
+  function toggleLang() {
+    lang = lang === 'zh' ? 'en' : 'zh';
+    prefs.lang = lang;
+    savePrefs(prefs);
+    applyLang();
+    sizeShell(); // 中英文案长度不同，重新测量卡片高度
+  }
+
   function initLang() {
     lang = detectLang();
     applyLang();
-    document.getElementById('btn-lang').addEventListener('click', () => {
-      lang = lang === 'zh' ? 'en' : 'zh';
-      prefs.lang = lang;
-      savePrefs(prefs);
-      applyLang();
-      sizeShell(); // 中英文案长度不同，重新测量卡片高度
+    document.querySelectorAll('.lang-toggle').forEach((btn) => {
+      btn.addEventListener('click', toggleLang);
     });
+    // 无手动选择记录时，按 IP 归属地二次校正（VPN 切区后首次访问即生效）
+    if (!loadPrefs().lang) {
+      detectRegionLang().then((want) => {
+        if ((want === 'zh' || want === 'en') && want !== lang) {
+          lang = want;
+          applyLang();
+          sizeShell();
+        }
+      });
+    }
   }
 
   // 进入应用界面：登录 / 注册 / 刷新恢复 三条路径共用
   function enterApp(data) {
     const u = data.user || {};
+    const sep = lang === 'zh' ? '，' : ', ';
     appAvatar.textContent = initialOf(u.username);
     appUsername.textContent = u.username || '';
-    document.getElementById('side-mail').textContent = u.email || '已登录';
+    document.getElementById('side-mail').textContent = u.email || t('signedIn');
     meAvatar.textContent = initialOf(u.username);
-    meGreet.textContent = dayTimeGreeting() + '，' + (u.username || '');
+    meGreet.textContent = dayTimeGreeting() + sep + (u.username || '');
     meMail.textContent = u.email || '';
     meCreated.textContent = data.createdAt ? formatDate(data.createdAt) : '—';
     const days = data.expiresAt
       ? Math.max(1, Math.ceil((data.expiresAt - Date.now()) / 86400000))
       : 7;
-    meExpire.textContent = '剩余 ' + days + ' 天';
+    meExpire.textContent = t('daysLeft', { s: days });
     switchTab('intro'); // 每次进入都回到产品介绍
     showApp(true);
     // 等应用卡片淡入完成后再弹出公告，避免两段动画叠在一起
@@ -3221,7 +3434,7 @@
 
   // 退出登录
   document.getElementById('btn-logout').addEventListener('click', (e) => {
-    withLoading(e.currentTarget, '退出中…', async () => {
+    withLoading(e.currentTarget, t('signingOut'), async () => {
       const token = getToken();
       if (token) {
         // 通知后端销毁会话；请求失败也照样完成本地登出
@@ -3251,7 +3464,7 @@
     }
 
     const label = btn.textContent;
-    btn.textContent = '微信号已复制';
+    btn.textContent = t('wxCopied');
     setTimeout(() => { btn.textContent = label; }, 2000);
 
     const a = document.createElement('a');
