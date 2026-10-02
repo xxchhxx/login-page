@@ -1,0 +1,17 @@
+# Netlify 部署配置
+# 后端代码在 server/ 目录，所以 base 指向 server
+
+[build]
+  base = "server"
+  command = "npm install"
+  publish = "public"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# 所有 /api/* 请求转交给 Express 应用处理
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
