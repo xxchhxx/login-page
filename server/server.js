@@ -320,7 +320,7 @@ app.post('/api/send-code', async (req, res) => {
           host: config.smtp.host,
           port: config.smtp.port,
           secure: config.smtp.secure,
-          userPresent: Boolean(config.smtp.user),
+          userDomain: String(config.smtp.user || '').split('@')[1] || '',
           passLength: String(config.smtp.pass || '').length
         }
       });
