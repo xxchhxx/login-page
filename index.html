@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -1369,7 +1369,7 @@
         <div class="auth-logo">
           <svg viewBox="0 0 24 24"><use href="#i-logo"/></svg>
         </div>
-        <span class="auth-tag">v1.3.0 全新改版</span>
+        <span class="auth-tag">v1.4.0 界面焕新</span>
         <h1 class="auth-title">更清晰、更专注的<br><em>音乐播放器</em>体验</h1>
         <p class="auth-desc">移除所有视觉噪音，纯色界面让内容回到主角位置。深浅色主题跟随系统设置自动切换，任何时刻都清晰可读。</p>
         <div class="auth-stats">
@@ -1510,6 +1510,12 @@
         <div class="notice-list">
           <article class="notice">
             <div class="meta"><span class="tag new">最新</span><time>2026-10-02</time></div>
+            <h3>v1.4.0 更新发布</h3>
+            <p>登录后主界面全新重构：采用侧边栏导航与动态页眉布局，层级更清晰、操作更高效；同时修复手机端内容溢出、导航被裁切与底部遮挡的问题，排版细节全面优化。</p>
+          </article>
+
+          <article class="notice">
+            <div class="meta"><time>2026-10-02</time></div>
             <h3>v1.3.0 更新发布</h3>
             <p>界面全面改版：移除毛玻璃与半透明效果，统一改为纯色背景设计；主题跟随系统设置自动切换，浅色与深色模式下均保持清晰对比；并统一卡片、按钮与表单的描边和阴影规范。登录后会自动弹出本次更新公告，可勾选「可不再提示」。</p>
           </article>
@@ -1603,7 +1609,7 @@
             <h2 id="app-title">产品介绍</h2>
             <p id="app-sub">了解 CH music 的核心能力</p>
           </div>
-          <span class="ver">v1.3.0</span>
+          <span class="ver">v1.4.0</span>
         </header>
 
         <div class="app-body" id="app-body">
@@ -1748,7 +1754,7 @@
                 </svg>
                 <b>Windows</b>
               </div>
-              <div class="meta"><span>v1.3.0</span><span>Windows 10 / 11 · 64 位</span><span>约 68 MB</span></div>
+              <div class="meta"><span>v1.4.0</span><span>Windows 10 / 11 · 64 位</span><span>约 68 MB</span></div>
               <button class="btn" type="button" disabled>即将推出</button>
             </div>
 
@@ -1760,7 +1766,7 @@
                 </svg>
                 <b>macOS</b>
               </div>
-              <div class="meta"><span>v1.3.0</span><span>Apple 芯片 / Intel</span><span>约 74 MB</span></div>
+              <div class="meta"><span>v1.4.0</span><span>Apple 芯片 / Intel</span><span>约 74 MB</span></div>
               <button class="btn" type="button" disabled>即将推出</button>
             </div>
 
@@ -1774,7 +1780,7 @@
                 </svg>
                 <b>Android</b>
               </div>
-              <div class="meta"><span>v1.3.0</span><span>Android 8.0+ · APK</span><span>约 32 MB</span></div>
+              <div class="meta"><span>v1.4.0</span><span>Android 8.0+ · APK</span><span>约 32 MB</span></div>
               <button class="btn" type="button" disabled>即将推出</button>
             </div>
 
@@ -1786,7 +1792,7 @@
                 </svg>
                 <b>iOS</b>
               </div>
-              <div class="meta"><span>v1.3.0</span><span>iPhone / iPad</span><span>约 46 MB</span></div>
+              <div class="meta"><span>v1.4.0</span><span>iPhone / iPad</span><span>约 46 MB</span></div>
               <button class="btn" type="button" disabled>即将推出</button>
             </div>
           </div>
@@ -1823,7 +1829,7 @@
           <div class="about-block">
             <h5>版本信息</h5>
             <div class="kv">
-              <span>最新版本 <b>v1.3.0</b></span>
+              <span>最新版本 <b>v1.4.0</b></span>
               <span>更新日期 <b>2026-10-02</b></span>
               <span>支持平台 <b>Windows · macOS · Android · iOS</b></span>
             </div>
@@ -2275,16 +2281,14 @@
   // ===== 登录成功后的公告弹窗 =====
   // 唯一数据源：修改版本号与条目后，弹窗与「关于我们」的公告内容保持同步维护
   const ANNOUNCE = {
-    version: 'v1.3.0',
+    version: 'v1.4.0',
     date: '2026-10-02',
-    title: 'v1.3.0 已发布',
+    title: 'v1.4.0 已发布',
     intro: '本次更新包含以下内容：',
     items: [
-      '<b>全新纯色主题</b>：移除毛玻璃与半透明效果，界面元素统一改为纯色背景，层次更分明。',
-      '<b>深浅色自动切换</b>：主题跟随系统设置，浅色与深色模式下均保持清晰对比。',
-      '<b>视觉层次优化</b>：统一卡片、按钮、表单的描边与阴影规范，突出内容深浅关系。',
-      '<b>登录保护与设备管理</b>：新增异常登录提示与登录设备列表管理。',
-      '<b>注册流程优化</b>：修复部分设备上密码可见性切换异常的问题。'
+      '<b>主界面全新重构</b>：登录后界面改为侧边栏导航与动态页眉布局，各页面标题与功能一目了然。',
+      '<b>移动端体验修复</b>：解决手机端内容溢出卡片、导航被裁切与底部被遮挡的问题，窄屏下可正常浏览与滚动。',
+      '<b>排版细节优化</b>：统一间距与对齐规范，视觉层级更清晰，操作更流畅。'
     ]
   };
 
